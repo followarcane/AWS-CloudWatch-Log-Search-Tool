@@ -36,11 +36,6 @@ cd awslogs-w-gui
 pip install -r requirements.txt --upgrade
 ```
 
-4. AWS CLI'yi yükleyin:
-```bash
-aws configure list-profiles
-```
-
 ## Kullanım
 
 1. Uygulamayı başlatın:
