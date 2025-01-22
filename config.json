@@ -1,0 +1,51 @@
+{
+    "env_configs": {
+        "QA": {
+            "paths": [
+                "/aws/eks/steller-test-cluster/applications/steller-test-wallet",
+                "/aws/eks/steller-test-cluster/applications/steller-test-internal",
+                "/aws/eks/steller-test-cluster/applications/steller-sandbox-gateway",
+                "/aws/eks/bahama-sandbox-cluster/applications/bahama-sandbox-apmv2",
+                "/aws/eks/bahama-sandbox-cluster/applications/bahama-sandbox-pool2",
+                "/aws/eks/bahama-sandbox-cluster/applications/bahama-sandbox-ppro"
+            ],
+            "profiles": {
+                "steller": "steller-developer",
+                "bahama": "bahama-developer"
+            }
+        },
+        "SB": {
+            "paths": [
+                "/aws/eks/steller-test-cluster/applications/steller-sandbox-wallet",
+                "/aws/eks/steller-test-cluster/applications/steller-sandbox-internal",
+                "/aws/eks/steller-test-cluster/applications/steller-sandbox-gateway",
+                "/aws/eks/bahama-sandbox-cluster/applications/bahama-sandbox-apmv2",
+                "/aws/eks/bahama-sandbox-cluster/applications/bahama-sandbox-pool2",
+                "/aws/eks/bahama-sandbox-cluster/applications/bahama-sandbox-ppro"
+            ],
+            "profiles": {
+                "steller": "steller-developer",
+                "bahama": "bahama-developer"
+            }
+        },
+        "PROD": {
+            "paths": [
+                "/aws/eks/steller-prod-cluster/applications/steller-prod-wallet",
+                "/aws/eks/steller-prod-cluster/applications/steller-prod-internal",
+                "/aws/eks/steller-prod-cluster/applications/steller-prod-gateway",
+                "/aws/eks/bahama-prod-cluster/applications/bahama-prod-apmv2",
+                "/aws/eks/bahama-prod-cluster/applications/bahama-prod-pool2",
+                "/aws/eks/bahama-prod-cluster/applications/bahama-prod-ppro"
+            ],
+            "profiles": {
+                "steller": "steller-developer",
+                "bahama": "bahama-developer"
+            }
+        },
+        "highlight_settings": {
+            "search_highlight": true,
+            "filter_highlight": true,
+            "sort_by_time": true
+        }
+    }
+}
