@@ -1,9 +1,29 @@
 # AWS araçları
 awscli>=1.29.0
 awslogs>=0.14.0
+boto3>=1.28.0  # AWS SDK for Python
+botocore>=1.31.0  # AWS SDK core functionality
 
 # GUI için
-tkinter  # Python ile birlikte gelir, ayrıca yüklemeye gerek yok
+tk>=8.6.0  # Python 3.x ile uyumlu Tkinter versiyonu
+
+# Sistem ve işletim sistemi araçları
+psutil>=5.9.0  # Process ve sistem monitörleme
+
+# Tarih/zaman işlemleri
+pytz>=2023.3  # Zaman dilimi desteği
+python-dateutil>=2.8.2  # Tarih/zaman parse etme ve manipülasyon
+
+# Temel Python paketleri (genelde Python ile gelir ama emin olmak için)
+setuptools>=65.5.1
+wheel>=0.40.0
+pip>=23.0.1
+
+# Encoding ve karakter seti desteği
+chardet>=5.1.0  # Karakter seti tespiti
+
+# Logging ve debug araçları
+colorama>=0.4.6  # Renkli terminal çıktısı
 
 # Diğer kullanılan paketler
 datetime  # Standart kütüphane
