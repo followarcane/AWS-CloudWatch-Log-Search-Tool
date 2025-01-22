@@ -1,2 +1,16 @@
+# AWS araçları
 awscli>=1.29.0
-awslogs>=0.14.0 
+awslogs>=0.14.0
+
+# GUI için
+tkinter  # Python ile birlikte gelir, ayrıca yüklemeye gerek yok
+
+# Diğer kullanılan paketler
+datetime  # Standart kütüphane
+json  # Standart kütüphane
+csv  # Standart kütüphane
+re  # Standart kütüphane
+os  # Standart kütüphane
+queue  # Standart kütüphane
+threading  # Standart kütüphane
+subprocess  # Standart kütüphane 
