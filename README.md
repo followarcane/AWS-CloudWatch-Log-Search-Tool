@@ -22,21 +22,24 @@ AWS CloudWatch loglarını görüntülemek ve filtrelemek için kullanıcı dost
 ## Kurulum
 
 1. Repoyu klonlayın:
-bash
+```bash
 git clone https://bitbucket.org/bumin/awslogs-w-gui.git
 cd awslogs-w-gui
+```
 
 
 2. Gerekli paketleri yükleyin:
-bash
+```bash
 aws configure list-profiles
+```
 
 
 ## Kullanım
 
 1. Uygulamayı başlatın:
-bash
+```bash
 python main.py
+```
 
 2. Ortam seçin (QA/SB/PROD)
 3. Aranacak metni girin
