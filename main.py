@@ -20,19 +20,58 @@ class SearchTab(ttk.Frame):
         self.active_threads = []
         self.log_queue = queue.Queue()
         self.is_searching = False
-        self.search_completed = False  # Yeni flag ekleyelim
+        self.search_completed = False
         self.setup_gui()
         
     def setup_gui(self):
-        # Filtreleme frame'i
+        # Kontrol frame'i
+        control_frame = ttk.Frame(self)
+        control_frame.pack(fill="x", padx=5, pady=5)
+        
+        # Environment seçimi
+        env_frame = ttk.Frame(control_frame)
+        env_frame.pack(side="left", padx=5)
+        
+        ttk.Label(env_frame, text="Ortam:").pack(side="left", padx=5)
+        self.env_var = tk.StringVar(value="QA")
+        env_choices = ["QA", "SB", "PROD"]
+        env_menu = ttk.OptionMenu(env_frame, self.env_var, "QA", *env_choices)
+        env_menu.pack(side="left", padx=5)
+        
+        # Arama kriterleri
+        search_frame = ttk.Frame(control_frame)
+        search_frame.pack(side="left", padx=5)
+        
+        ttk.Label(search_frame, text="Search:").pack(side="left", padx=5)
+        self.search_var = tk.StringVar()
+        ttk.Entry(search_frame, textvariable=self.search_var, width=40).pack(side="left", padx=5)
+        
+        ttk.Label(search_frame, text="Start Time:").pack(side="left", padx=5)
+        self.time_var = tk.StringVar(value="1")
+        ttk.Entry(search_frame, textvariable=self.time_var, width=10).pack(side="left", padx=5)
+        ttk.Label(search_frame, text="hours ago").pack(side="left")
+        
+        # Butonlar
+        button_frame = ttk.Frame(control_frame)
+        button_frame.pack(side="left", padx=5)
+        
+        self.search_button = ttk.Button(button_frame, text="Ara", command=self.start_search)
+        self.search_button.pack(side="left", padx=2)
+        
+        self.stop_button = ttk.Button(button_frame, text="Durdur", command=self.stop_search, state="disabled")
+        self.stop_button.pack(side="left", padx=2)
+        
+        self.clear_button = ttk.Button(button_frame, text="Temizle", command=self.clear_content)
+        self.clear_button.pack(side="left", padx=2)
+        
+        # Filtreleme frame'i - ayrı bir frame olarak ekle
         filter_frame = ttk.Frame(self)
         filter_frame.pack(fill="x", padx=5, pady=5)
         
         ttk.Label(filter_frame, text="Filtrele:").pack(side="left", padx=5)
         self.filter_var = tk.StringVar()
         self.filter_var.trace_add("write", lambda *args: self.main_app.debounce_filter(self))
-        filter_entry = ttk.Entry(filter_frame, textvariable=self.filter_var, width=40)
-        filter_entry.pack(side="left", padx=5)
+        ttk.Entry(filter_frame, textvariable=self.filter_var, width=40).pack(side="left", padx=5)
         
         # Text widget
         self.text_widget = tk.Text(self, wrap=tk.WORD, 
@@ -60,83 +99,126 @@ class SearchTab(ttk.Frame):
         """Log içeriğini güncelle"""
         self.full_log_content = content
 
+    def start_search(self):
+        """Bu tab için aramayı başlat"""
+        if self.is_searching:
+            return
+            
+        self.stop_search()
+        self.clear_content()
+        
+        filter_pattern = self.get_filter_pattern()
+        if not filter_pattern:
+            self.status_var.set("Lütfen arama değeri girin")
+            return
+            
+        self.is_searching = True
+        self.search_completed = False
+        self.toggle_buttons(searching=True)
+        self.progress_bar.start()
+        
+        # Her path için ayrı thread başlat
+        paths_and_profiles = self.main_app.get_current_paths_and_profiles()
+        for path, profile in paths_and_profiles:
+            thread = threading.Thread(
+                target=self.main_app.search_logs,
+                args=(path, profile, filter_pattern, self),
+                daemon=True
+            )
+            thread.start()
+            self.active_threads.append(thread)
+        
+        self.main_app.update_gui(self)
+
+    def stop_search(self):
+        """Bu tab için aramayı durdur"""
+        self.is_searching = False
+        self.status_var.set("Arama durduruluyor...")
+        
+        for thread in self.active_threads:
+            if thread.is_alive():
+                thread.join(timeout=0.1)
+        self.active_threads.clear()
+        
+        while not self.log_queue.empty():
+            try:
+                self.log_queue.get_nowait()
+            except queue.Empty:
+                break
+                
+        self.status_var.set("Arama durduruldu!")
+        self.progress_bar.stop()
+        self.toggle_buttons(searching=False)
+
+    def toggle_buttons(self, searching=True):
+        """Butonların durumunu güncelle"""
+        state = "disabled" if searching else "normal"
+        self.search_button.configure(state=state)
+        self.clear_button.configure(state=state)
+        self.stop_button.configure(state="normal" if searching else "disabled")
+
+    def get_filter_pattern(self):
+        """Arama değerini al"""
+        search_value = self.search_var.get()
+        if not search_value:
+            return None
+        return f'"{search_value}"'
+
+    def clear_content(self):
+        """Tab'in içeriğini temizle"""
+        # Text widget'ı temizle
+        self.text_widget.configure(state='normal')
+        self.text_widget.delete(1.0, "end")
+        self.text_widget.configure(state='disabled')
+        
+        # Status ve progress bar'ı sıfırla
+        self.status_var.set("")
+        self.progress_bar.stop()
+        
+        # Filtreleme alanını temizle
+        self.filter_var.set("")
+        
+        # Log içeriğini sıfırla
+        self.full_log_content = ""
+        
+        # Tag'leri temizle
+        for tag in self.text_widget.tag_names():
+            self.text_widget.tag_delete(tag)
+        
+        # Arama durumlarını sıfırla
+        self.search_completed = False
+
 class LogSearcherGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("AWS Log Searcher")
-        
-        # Tam ekran aç
-        self.root.state('zoomed')  # Windows için
-        # Alternatif olarak:
-        # self.root.attributes('-zoomed', True)  # Linux için
-        
+        self.root.state('zoomed')
         self.root.geometry("1200x800")
         
         # Configden path'leri oku
         self.load_config()
-        
-        # Tab sayacı ekle
-        self.last_tab_number = 0  # Yeni değişken
+        self.last_tab_number = 0
         
         # Ana container
         main_container = ttk.Frame(root)
         main_container.pack(fill="both", expand=True, padx=10, pady=5)
         
-        # Search frame
-        search_frame = ttk.LabelFrame(main_container, text="Arama Kriterleri")
-        search_frame.pack(fill="x", padx=5, pady=5)
+        # Üst toolbar frame
+        toolbar_frame = ttk.Frame(main_container)
+        toolbar_frame.pack(fill="x", padx=5, pady=5)
         
-        # Environment selection frame
-        env_frame = ttk.Frame(search_frame)
-        env_frame.pack(fill="x", padx=5, pady=5)
+        # Sol grup (Yeni Tab ve Tab Kapat)
+        left_group = ttk.Frame(toolbar_frame)
+        left_group.pack(side="left", padx=5)
         
-        ttk.Label(env_frame, text="Ortam:").pack(side="left", padx=5)
-        self.env_var = tk.StringVar(value="QA")
-        env_choices = ["QA", "SB", "PROD"]
-        env_menu = ttk.OptionMenu(env_frame, self.env_var, "QA", *env_choices)
-        env_menu.pack(side="left", padx=5)
+        ttk.Button(left_group, text="Yeni Tab", command=self.add_tab).pack(side="left", padx=2)
+        ttk.Button(left_group, text="Tab'i Kapat", command=self.close_current_tab).pack(side="left", padx=2)
         
-        # Search criteria
-        criteria_frame = ttk.Frame(search_frame)
-        criteria_frame.pack(fill="x", padx=5, pady=5)
+        # Sağ grup (Ayarlar)
+        right_group = ttk.Frame(toolbar_frame)
+        right_group.pack(side="right", padx=5)
         
-        # Search (filter pattern)
-        ttk.Label(criteria_frame, text="Search:").grid(row=0, column=0, padx=5, pady=5)
-        self.search_var = tk.StringVar()
-        ttk.Entry(criteria_frame, textvariable=self.search_var, width=40).grid(row=0, column=1, padx=5, pady=5)
-        
-        # Time range
-        ttk.Label(criteria_frame, text="Start Time:").grid(row=0, column=2, padx=5, pady=5)
-        self.time_var = tk.StringVar(value="1")
-        time_entry = ttk.Entry(criteria_frame, textvariable=self.time_var, width=20)
-        time_entry.grid(row=0, column=3, padx=2, pady=5)
-        ttk.Label(criteria_frame, text="(hours ago or YYYY-MM-DD HH:mm:ss)").grid(row=0, column=4, padx=2, pady=5)
-        
-        # Buttons
-        self.button_frame = ttk.Frame(criteria_frame)
-        self.button_frame.grid(row=1, column=0, columnspan=5, pady=5)
-        
-        self.search_button = ttk.Button(self.button_frame, text="Ara", command=self.start_search)
-        self.search_button.pack(side="left", padx=5)
-        
-        self.stop_button = ttk.Button(self.button_frame, text="Durdur", command=self.stop_search, state="disabled")
-        self.stop_button.pack(side="left", padx=5)
-        
-        self.clear_button = ttk.Button(self.button_frame, text="Temizle", command=self.clear_results)
-        self.clear_button.pack(side="left", padx=5)
-        
-        self.export_button = ttk.Button(self.button_frame, text="Dışa Aktar", command=self.export_results)
-        self.export_button.pack(side="left", padx=5)
-        
-        self.settings_button = ttk.Button(self.button_frame, text="Ayarlar", command=self.show_settings)
-        self.settings_button.pack(side="left", padx=5)
-        
-        # Tab kontrolü için butonlar
-        tab_buttons = ttk.Frame(main_container)
-        tab_buttons.pack(fill="x", padx=5, pady=2)
-        
-        ttk.Button(tab_buttons, text="Yeni Tab", command=self.add_tab).pack(side="left", padx=5)
-        ttk.Button(tab_buttons, text="Tab'i Kapat", command=self.close_current_tab).pack(side="left", padx=5)
+        ttk.Button(right_group, text="Ayarlar", command=self.show_settings).pack(side="right", padx=2)
         
         # Notebook (tab container)
         self.notebook = ttk.Notebook(main_container)
@@ -150,7 +232,7 @@ class LogSearcherGUI:
         
         # GUI kilitlemeyi önlemek için
         self.root = root
-        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)  # Pencere kapatıldığında temizlik yap
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
         # Filtreleme için debounce timer
         self.filter_timer = None
@@ -221,7 +303,9 @@ class LogSearcherGUI:
 
     def on_closing(self):
         """Uygulama kapatılırken thread'leri temizle"""
-        self.stop_search()
+        current_tab = self.get_current_tab()
+        if current_tab:
+            current_tab.stop_search()  # Tab'in kendi stop metodunu çağır
         self.root.destroy()
 
     def stop_search(self):
@@ -251,11 +335,15 @@ class LogSearcherGUI:
         
         current_tab.status_var.set("Arama durduruldu!")
         current_tab.progress_bar.stop()
-        self.toggle_buttons(searching=False)
+        current_tab.toggle_buttons(searching=False)  # Tab'in kendi butonlarını güncelle
 
     def get_current_paths_and_profiles(self):
         """Seçili ortama göre path ve profilleri döndür"""
-        env = self.env_var.get()
+        current_tab = self.get_current_tab()
+        if not current_tab:
+            return []
+        
+        env = current_tab.env_var.get()  # Tab'in kendi env_var'ını kullan
         config = self.env_configs.get(env, {"paths": [], "profiles": {}})
         
         paths_with_profiles = []
@@ -263,7 +351,13 @@ class LogSearcherGUI:
             # Path'in hangi profile'a ait olduğunu belirle
             profile = config["profiles"]["steller"] if "steller" in path else config["profiles"]["bahama"]
             paths_with_profiles.append((path, profile))
-            
+        
+        print(f"\nSelected environment: {env}")
+        print(f"Found paths and profiles:")
+        for path, profile in paths_with_profiles:
+            print(f"  - Path: {path}")
+            print(f"    Profile: {profile}")
+        
         return paths_with_profiles
 
     def search_logs(self, path, profile, filter_pattern, tab):
@@ -275,18 +369,16 @@ class LogSearcherGUI:
                 "--profile",
                 profile,
                 "--start",
-                self.get_time_range(),
+                tab.time_var.get().strip() + "h ago",  # Tab'in kendi time_var'ını kullan
                 "--query=log"
             ]
             
             if filter_pattern:
                 cmd.extend(["--filter-pattern", filter_pattern])
             
-            # Komutu terminale yazdır
             command_str = " ".join(cmd)
             print(f"\nExecuting command: {command_str}")
             
-            # Process'i başlat
             process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
@@ -297,30 +389,30 @@ class LogSearcherGUI:
                 universal_newlines=True
             )
             
+            log_count = 0
             current_log = None
             current_timestamp = None
             current_level = None
             
-            # stdout'u non-blocking olarak oku
             for line in iter(process.stdout.readline, ''):
                 if not tab.is_searching:
+                    print(f"[{path}] Search stopped by user")
                     break
                     
                 if line.strip():
-                    print(f"[{path}] Raw log: {line.strip()}")
+                    print(f"\n[{path}] Found log line: {line.strip()}")
                     
-                    # Log path'i içeriyor mu kontrol et
                     is_main_log = path in line
-                    
                     if is_main_log:
+                        log_count += 1
                         if current_log:
-                            print(f"[{path}] Sending to queue: {current_log[:200]}...")
+                            print(f"[{path}] Sending log #{log_count} to queue")
                             tab.log_queue.put({
                                 "timestamp": current_timestamp,
                                 "level": current_level,
                                 "message": current_log
                             })
-                            
+                        
                         # Yeni log başlat
                         current_log = line.strip()
                         try:
@@ -358,10 +450,11 @@ class LogSearcherGUI:
                     "message": current_log
                 })
                 
-            print(f"[{path}] Search completed")
+            print(f"\n[{path}] Search completed")
+            print(f"[{path}] Total logs found: {log_count}")
             
         except Exception as e:
-            print(f"[{path}] Log arama hatası: {str(e)}")
+            print(f"\n[{path}] Error during search: {str(e)}")
             import traceback
             traceback.print_exc()
         finally:
@@ -423,7 +516,7 @@ class LogSearcherGUI:
             if not filter_text:
                 tab.text_widget.insert(tk.END, tab.full_log_content)
                 self.reapply_colors(tab)
-                search_term = self.search_var.get()
+                search_term = tab.search_var.get()
                 if search_term:
                     self.highlight_text(tab, "1.0", "end", search_term, "search_highlight")
                 tab.text_widget.configure(state='disabled')
@@ -433,7 +526,7 @@ class LogSearcherGUI:
             if not self.is_valid_filter_text(filter_text):
                 tab.text_widget.insert(tk.END, tab.full_log_content)
                 self.reapply_colors(tab)
-                search_term = self.search_var.get()
+                search_term = tab.search_var.get()
                 if search_term:
                     self.highlight_text(tab, "1.0", "end", search_term, "search_highlight")
                 tab.text_widget.configure(state='disabled')
@@ -500,7 +593,7 @@ class LogSearcherGUI:
                             self.highlight_text(tab, current_pos, "end", filter_text, "filter_highlight")
             
             # Arama terimini highlight et
-            search_term = self.search_var.get()
+            search_term = tab.search_var.get()
             if search_term:
                 self.highlight_text(tab, "1.0", "end", search_term, "search_highlight")
             
@@ -538,13 +631,13 @@ class LogSearcherGUI:
 
     def update_gui(self, tab):
         try:
-            # Tab hala geçerli mi kontrol et
+            # Sadece tab'in geçerli olup olmadığını kontrol et
             if not tab in self.notebook.winfo_children():
                 return
-                
+            
             if not tab.is_searching and not tab.search_completed:
                 return
-                
+            
             has_new_logs = False
             batch_size = 0
             
@@ -552,7 +645,7 @@ class LogSearcherGUI:
                 while batch_size < 5 and not tab.log_queue.empty():
                     try:
                         log_entry = tab.log_queue.get_nowait()
-                        print(f"[{tab}] Processing log: {log_entry['timestamp']} [{log_entry['level']}] Queue size: {tab.log_queue.qsize()}")
+                        print(f"[Tab {self.notebook.index(tab)}] Processing log: {log_entry['timestamp']} [{log_entry['level']}] Queue size: {tab.log_queue.qsize()}")
                         
                         tab.text_widget.configure(state='normal')
                         
@@ -604,20 +697,19 @@ class LogSearcherGUI:
             
             # Thread durumunu kontrol et
             active_threads = [t for t in tab.active_threads if t.is_alive()]
-            #print(f"[{tab}] Active threads: {len(active_threads)}, Queue size: {tab.log_queue.qsize()}")
             
             if not active_threads and tab.log_queue.empty():
-                print(f"[{tab}] Search completed")
+                print(f"[Tab {self.notebook.index(tab)}] Search completed")
                 tab.is_searching = False
                 tab.search_completed = True
                 tab.status_var.set("Arama tamamlandı!")
                 tab.progress_bar.stop()
-                self.toggle_buttons(searching=False)
+                tab.toggle_buttons(searching=False)
                 
                 if self.sort_by_time_enabled:
                     self.sort_logs_by_time()
             else:
-                # Tab hala geçerli mi kontrol et
+                # Sadece tab'in geçerli olup olmadığını kontrol et
                 if tab in self.notebook.winfo_children():
                     self.root.after(50, self.update_gui, tab)
                 
@@ -928,7 +1020,7 @@ class LogSearcherGUI:
                 current_tab.text_widget.tag_configure(f"level_{color}", foreground=color)
             
             # Highlight'ları tekrar uygula
-            search_term = self.search_var.get()
+            search_term = current_tab.search_var.get()
             if search_term:
                 self.highlight_text(current_tab, "1.0", "end", search_term, "search_highlight")
             
