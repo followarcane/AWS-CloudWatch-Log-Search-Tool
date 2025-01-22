@@ -604,7 +604,7 @@ class LogSearcherGUI:
             
             # Thread durumunu kontrol et
             active_threads = [t for t in tab.active_threads if t.is_alive()]
-            print(f"[{tab}] Active threads: {len(active_threads)}, Queue size: {tab.log_queue.qsize()}")
+            #print(f"[{tab}] Active threads: {len(active_threads)}, Queue size: {tab.log_queue.qsize()}")
             
             if not active_threads and tab.log_queue.empty():
                 print(f"[{tab}] Search completed")
