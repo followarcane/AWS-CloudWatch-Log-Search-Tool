@@ -6,7 +6,6 @@ A GUI tool for searching and filtering AWS CloudWatch logs with ease.
 
 1. Clone the project:
 ```bash
-git clone https://github.com/yourusername/aws-log-searcher.git
 cd aws-log-searcher
 ```
 
