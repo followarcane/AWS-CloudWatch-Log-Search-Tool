@@ -29,17 +29,19 @@ class SearchTab(ttk.Frame):
         self.time_var = tk.StringVar(value="1")
         self.env_var = tk.StringVar(value="QA")
         self.status_var = tk.StringVar()
-        self.path_filter_var = tk.StringVar(value="Hepsi")
+        self.path_filter_var = tk.StringVar(value="All")
+        
+        # Search dialog için variable
+        self.search_dialog = None
         
         # GUI'yi oluştur
         self.setup_gui()
         
         # Sağ tık menüsü ekle
         self.context_menu = tk.Menu(self, tearoff=0)
-        # Kısayol bilgisini menüde göster
-        shortcut_text = "⌘F" if sys.platform == "darwin" else "Ctrl+F"
+        shortcut_text = "⌘D" if sys.platform == "darwin" else "Ctrl+D"
         self.context_menu.add_command(
-            label=f"Seçili Metni Ara ({shortcut_text})", 
+            label=f"Search Selected Text in New Tab ({shortcut_text})", 
             command=self.search_selected_text
         )
         
@@ -48,9 +50,15 @@ class SearchTab(ttk.Frame):
         
         # Kısayolu bağla
         is_mac = sys.platform == "darwin"
-        platform_key = "mac" if is_mac else "win"
-        search_shortcut = self.main_app.shortcuts["search_selected"][platform_key]
-        self.text_widget.bind(search_shortcut, lambda e: self.search_selected_text())
+        if is_mac:
+            self.text_widget.bind("<Command-f>", self.show_search_dialog)
+            self.text_widget.bind("<Command-d>", self.search_selected_text)
+        else:
+            self.text_widget.bind("<Control-f>", self.show_search_dialog)
+            self.text_widget.bind("<Control-d>", self.search_selected_text)
+
+        # Bind tab change event to handle search frame
+        self.bind('<Visibility>', self.on_tab_change)
 
     def setup_gui(self):
         # Kontrol frame'i
@@ -120,13 +128,13 @@ class SearchTab(ttk.Frame):
         
         # Path listesini güncelle
         def update_path_list(*args):
-            paths = ["Hepsi"]
+            paths = ["All"]
             env = self.env_var.get()
             config = self.main_app.env_configs.get(env, {"paths": []})
             paths.extend(config["paths"])
             self.path_filter['values'] = paths
             if self.path_filter_var.get() not in paths:
-                self.path_filter_var.set("Hepsi")
+                self.path_filter_var.set("All")
         
         # Environment değiştiğinde path listesini güncelle
         self.env_var.trace_add("write", update_path_list)
@@ -143,6 +151,9 @@ class SearchTab(ttk.Frame):
         )
         self.text_widget.pack(fill="both", expand=True)
         
+        # Quick search için tag oluştur
+        self.text_widget.tag_configure("quick_search", background="yellow", foreground="black")
+        
         # Scrollbar
         scrollbar = ttk.Scrollbar(self, command=self.text_widget.yview)
         scrollbar.pack(side="right", fill="y")
@@ -155,6 +166,20 @@ class SearchTab(ttk.Frame):
         self.progress_bar = ttk.Progressbar(self, mode='indeterminate')
         self.progress_bar.pack(fill="x", padx=5, pady=2)
         ttk.Label(self, textvariable=self.status_var).pack(fill="x", padx=5)
+
+        # Configure styles
+        style = ttk.Style()
+        style.configure("Search.TFrame", 
+            background='#2d2d2d',
+            borderwidth=1,
+            relief='solid'
+        )
+        style.configure("Search.TEntry",
+            fieldbackground='#2d2d2d',
+            foreground='white',
+            insertcolor='white',
+            borderwidth=0
+        )
 
     def update_full_content(self, content):
         """Log içeriğini güncelle"""
@@ -258,32 +283,40 @@ class SearchTab(ttk.Frame):
         except:
             pass
 
-    def search_selected_text(self):
-        """Seçili metni yeni tab'de ara"""
+    def search_selected_text(self, event=None):
+        """Search selected text in new tab"""
         try:
-            # Seçili metni al
+            # Get selected text
             if self.text_widget.tag_ranges("sel"):
                 selected_text = self.text_widget.selection_get()
                 
-                # Yeni tab oluştur
+                # Create new tab
                 new_tab = self.main_app.add_tab()
                 
-                # Mevcut tab'in ortam ve zaman ayarlarını kopyala
+                # Copy current tab's environment and time settings
                 new_tab.env_var.set(self.env_var.get())
                 new_tab.time_var.set(self.time_var.get())
                 
-                # Seçili metni search kutusuna yerleştir
+                # Set selected text in search box
                 new_tab.search_var.set(selected_text)
                 
-                # Butonların durumunu ayarla
-                new_tab.search_button.configure(state="disabled")
-                new_tab.clear_button.configure(state="disabled")
-                new_tab.stop_button.configure(state="normal")
+                # Configure button states and states
+                new_tab.is_searching = True
+                new_tab.search_completed = False
+                new_tab.toggle_buttons(searching=True)
+                new_tab.progress_bar.start()
                 
-                # Aramayı başlat
-                new_tab.start_search()
-        except:
-            pass
+                # Make sure the new tab is selected and visible
+                self.main_app.notebook.select(new_tab)
+                
+                # Start search in new tab
+                new_tab.after(100, lambda: new_tab.start_search())
+                
+            return "break"
+            
+        except Exception as e:
+            print(f"Error in search_selected_text: {e}")
+            return "break"
 
     def apply_path_filter(self):
         """Path bazlı filtreleme uygula"""
@@ -293,8 +326,8 @@ class SearchTab(ttk.Frame):
             # Text widget'ı güncelle
             self.text_widget.configure(state='normal')
             
-            # Eğer Hepsi seçiliyse ve filtre yoksa tüm içeriği göster
-            if selected_path == "Hepsi":
+            # Eğer All seçiliyse ve filtre yoksa tüm içeriği göster
+            if selected_path == "All":
                 if not self.filter_var.get():
                     self.text_widget.delete(1.0, tk.END)
                     self.text_widget.insert(tk.END, self.full_log_content)
@@ -454,6 +487,123 @@ class SearchTab(ttk.Frame):
             print(f"Renklendirme hatası: {e}")
             self.text_widget.configure(state='disabled')
 
+    def show_search_dialog(self, event=None):
+        """Show search dialog"""
+        try:
+            # Make sure this tab is selected and focused
+            current = self.main_app.notebook.select()
+            current_tab = self.main_app.notebook.nametowidget(current)
+            
+            if current_tab != self:
+                return "break"
+            
+            # If search frame already exists, just focus it
+            if hasattr(self, 'search_frame'):
+                if self.search_frame.winfo_exists():
+                    self.search_entry.focus_set()
+                    return "break"
+            
+            # Create search frame
+            self.search_frame = ttk.Frame(self.text_widget, style="Search.TFrame")
+            
+            # Search entry with smaller padding
+            search_var = tk.StringVar()
+            self.search_entry = ttk.Entry(self.search_frame, textvariable=search_var, width=20)
+            self.search_entry.pack(fill='x', padx=2, pady=2)
+            
+            # Position frame at top-right of text widget
+            self.text_widget.update_idletasks()
+            frame_width = 200
+            self.search_frame.place(
+                x=self.text_widget.winfo_width() - frame_width - 5,
+                y=5,
+                width=frame_width,
+                height=30
+            )
+            
+            # Enter handler - just highlight
+            def on_enter(event=None):
+                search_text = search_var.get()
+                if search_text:
+                    self.highlight_search(search_text)
+                return "break"
+            
+            # Escape handler - close frame and clean up
+            def on_escape(event=None):
+                if hasattr(self, 'search_frame') and self.search_frame.winfo_exists():
+                    self.clear_highlights()
+                    self.search_frame.destroy()
+                    delattr(self, 'search_frame')  # Remove the reference
+                    self.text_widget.focus_set()
+                return "break"
+            
+            # Bind keys
+            self.search_entry.bind("<Return>", on_enter)
+            self.search_entry.bind("<Escape>", on_escape)
+            
+            # Focus entry
+            self.search_entry.focus_set()
+            
+            # Update frame position when text widget is resized
+            def update_frame_position(event=None):
+                if hasattr(self, 'search_frame') and self.search_frame.winfo_exists():
+                    self.search_frame.place(
+                        x=self.text_widget.winfo_width() - frame_width - 5,
+                        y=5
+                    )
+            
+            self.text_widget.bind('<Configure>', update_frame_position)
+            
+            return "break"
+            
+        except Exception as e:
+            print(f"Error in show_search_dialog: {e}")
+            return "break"
+
+    def clear_highlights(self):
+        """Clear all search highlights"""
+        try:
+            self.text_widget.configure(state='normal')
+            self.text_widget.tag_remove("quick_search", "1.0", "end")
+        finally:
+            self.text_widget.configure(state='disabled')
+
+    def highlight_search(self, search_text):
+        """Highlight text in the log"""
+        try:
+            self.text_widget.configure(state='normal')
+            
+            # Remove previous highlights
+            self.text_widget.tag_remove("quick_search", "1.0", "end")
+            
+            # Highlight new matches
+            start_pos = "1.0"
+            while True:
+                start_pos = self.text_widget.search(
+                    search_text, start_pos, "end", 
+                    nocase=True, 
+                    regexp=False
+                )
+                if not start_pos:
+                    break
+                    
+                end_pos = f"{start_pos}+{len(search_text)}c"
+                self.text_widget.tag_add("quick_search", start_pos, end_pos)
+                start_pos = end_pos
+                
+            # Configure highlight style
+            self.text_widget.tag_config("quick_search", background="yellow", foreground="black")
+            
+        finally:
+            self.text_widget.configure(state='disabled')
+
+    def on_tab_change(self, event):
+        """Handle tab change events"""
+        # If this tab is not visible and has a search frame, hide it
+        if not self.winfo_viewable() and hasattr(self, 'search_frame'):
+            if self.search_frame.winfo_exists():
+                self.search_frame.destroy()
+
 class LogSearcherGUI:
     def __init__(self, root):
         self.root = root
@@ -569,9 +719,9 @@ class LogSearcherGUI:
                         "win": "<Control-BackSpace>",
                         "mac": "<Command-BackSpace>"
                     },
-                    "search_selected": {  # Yeni kısayol
-                        "win": "<Control-f>",
-                        "mac": "<Command-f>"
+                    "search_selected": {
+                        "win": "<Control-d>",
+                        "mac": "<Command-d>"
                     }
                 })
                 self.shortcuts = shortcut_settings
@@ -593,9 +743,9 @@ class LogSearcherGUI:
                     "win": "<Control-BackSpace>",
                     "mac": "<Command-BackSpace>"
                 },
-                "search_selected": {  # Yeni kısayol
-                    "win": "<Control-f>",
-                    "mac": "<Command-f>"
+                "search_selected": {
+                    "win": "<Control-d>",
+                    "mac": "<Command-d>"
                 }
             }
             self.save_config()
@@ -1470,6 +1620,7 @@ class LogSearcherGUI:
                 
         except Exception as e:
             print(f"Renklendirme hatası: {e}")
+            tab.text_widget.configure(state='disabled')
 
     def add_tab(self):
         """Yeni bir arama tab'i ekle"""
