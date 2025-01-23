@@ -61,7 +61,7 @@ class SearchTab(ttk.Frame):
         env_frame = ttk.Frame(control_frame)
         env_frame.pack(side="left", padx=5)
         
-        ttk.Label(env_frame, text="Ortam:").pack(side="left", padx=5)
+        ttk.Label(env_frame, text="Env:").pack(side="left", padx=5)
         self.env_var = tk.StringVar(value="QA")
         env_choices = ["QA", "SB", "PROD"]
         env_menu = ttk.OptionMenu(env_frame, self.env_var, "QA", *env_choices)
@@ -82,13 +82,13 @@ class SearchTab(ttk.Frame):
         button_frame = ttk.Frame(control_frame)
         button_frame.pack(side="left", padx=5)
         
-        self.search_button = ttk.Button(button_frame, text="Ara", command=self.start_search)
+        self.search_button = ttk.Button(button_frame, text="Search", command=self.start_search)
         self.search_button.pack(side="left", padx=2)
         
-        self.stop_button = ttk.Button(button_frame, text="Durdur", command=self.stop_search, state="disabled")
+        self.stop_button = ttk.Button(button_frame, text="Stop", command=self.stop_search, state="disabled")
         self.stop_button.pack(side="left", padx=2)
         
-        self.clear_button = ttk.Button(button_frame, text="Temizle", command=self.clear_content)
+        self.clear_button = ttk.Button(button_frame, text="Clear", command=self.clear_content)
         self.clear_button.pack(side="left", padx=2)
         
         # Filtreleme frame'i
@@ -99,7 +99,7 @@ class SearchTab(ttk.Frame):
         filter_left_frame = ttk.Frame(filter_frame)
         filter_left_frame.pack(side="left")
         
-        ttk.Label(filter_left_frame, text="Filtrele:").pack(side="left", padx=5)
+        ttk.Label(filter_left_frame, text="Filter:").pack(side="left", padx=5)
         self.filter_var.trace_add("write", lambda *args: self.main_app.debounce_filter(self))
         ttk.Entry(filter_left_frame, textvariable=self.filter_var, width=40).pack(side="left", padx=5)
         
