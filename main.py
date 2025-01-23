@@ -10,6 +10,7 @@ import csv
 from tkinter import filedialog
 import re
 import os
+import sys
 
 class SearchTab(ttk.Frame):
     """Her bir arama tab'i için frame"""
@@ -21,8 +22,35 @@ class SearchTab(ttk.Frame):
         self.log_queue = queue.Queue()
         self.is_searching = False
         self.search_completed = False
+        
+        # GUI değişkenleri
+        self.search_var = tk.StringVar()
+        self.filter_var = tk.StringVar()
+        self.time_var = tk.StringVar(value="1")
+        self.env_var = tk.StringVar(value="QA")
+        self.status_var = tk.StringVar()
+        
+        # GUI'yi oluştur
         self.setup_gui()
         
+        # Sağ tık menüsü ekle
+        self.context_menu = tk.Menu(self, tearoff=0)
+        # Kısayol bilgisini menüde göster
+        shortcut_text = "⌘F" if sys.platform == "darwin" else "Ctrl+F"
+        self.context_menu.add_command(
+            label=f"Seçili Metni Ara ({shortcut_text})", 
+            command=self.search_selected_text
+        )
+        
+        # Text widget'a sağ tık olayını bağla
+        self.text_widget.bind("<Button-3>", self.show_context_menu)
+        
+        # Kısayolu bağla
+        is_mac = sys.platform == "darwin"
+        platform_key = "mac" if is_mac else "win"
+        search_shortcut = self.main_app.shortcuts["search_selected"][platform_key]
+        self.text_widget.bind(search_shortcut, lambda e: self.search_selected_text())
+
     def setup_gui(self):
         # Kontrol frame'i
         control_frame = ttk.Frame(self)
@@ -43,11 +71,9 @@ class SearchTab(ttk.Frame):
         search_frame.pack(side="left", padx=5)
         
         ttk.Label(search_frame, text="Search:").pack(side="left", padx=5)
-        self.search_var = tk.StringVar()
         ttk.Entry(search_frame, textvariable=self.search_var, width=40).pack(side="left", padx=5)
         
         ttk.Label(search_frame, text="Start Time:").pack(side="left", padx=5)
-        self.time_var = tk.StringVar(value="1")
         ttk.Entry(search_frame, textvariable=self.time_var, width=10).pack(side="left", padx=5)
         ttk.Label(search_frame, text="hours ago").pack(side="left")
         
@@ -69,7 +95,6 @@ class SearchTab(ttk.Frame):
         filter_frame.pack(fill="x", padx=5, pady=5)
         
         ttk.Label(filter_frame, text="Filtrele:").pack(side="left", padx=5)
-        self.filter_var = tk.StringVar()
         self.filter_var.trace_add("write", lambda *args: self.main_app.debounce_filter(self))
         ttk.Entry(filter_frame, textvariable=self.filter_var, width=40).pack(side="left", padx=5)
         
@@ -90,7 +115,6 @@ class SearchTab(ttk.Frame):
         self.text_widget.configure(state='disabled')
         
         # Status bar
-        self.status_var = tk.StringVar()
         self.progress_bar = ttk.Progressbar(self, mode='indeterminate')
         self.progress_bar.pack(fill="x", padx=5, pady=2)
         ttk.Label(self, textvariable=self.status_var).pack(fill="x", padx=5)
@@ -188,12 +212,75 @@ class SearchTab(ttk.Frame):
         # Arama durumlarını sıfırla
         self.search_completed = False
 
+    def show_context_menu(self, event):
+        """Sağ tık menüsünü göster"""
+        try:
+            # Seçili metin varsa menüyü göster
+            if self.text_widget.tag_ranges("sel"):
+                self.context_menu.post(event.x_root, event.y_root)
+        except:
+            pass
+
+    def search_selected_text(self):
+        """Seçili metni yeni tab'de ara"""
+        try:
+            # Seçili metni al
+            if self.text_widget.tag_ranges("sel"):
+                selected_text = self.text_widget.selection_get()
+                
+                # Yeni tab oluştur
+                new_tab = self.main_app.add_tab()
+                
+                # Mevcut tab'in ortam ve zaman ayarlarını kopyala
+                new_tab.env_var.set(self.env_var.get())
+                new_tab.time_var.set(self.time_var.get())
+                
+                # Seçili metni search kutusuna yerleştir
+                new_tab.search_var.set(selected_text)
+                
+                # Butonların durumunu ayarla
+                new_tab.search_button.configure(state="disabled")
+                new_tab.clear_button.configure(state="disabled")
+                new_tab.stop_button.configure(state="normal")
+                
+                # Aramayı başlat
+                new_tab.start_search()
+        except:
+            pass
+
 class LogSearcherGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("AWS Log Searcher")
         self.root.state('zoomed')
         self.root.geometry("1200x800")
+        
+        # Stil tanımlamaları
+        style = ttk.Style()
+        
+        # Menü stili için özel renk tanımlamaları
+        root.option_add('*Menu.background', '#2D2D2D')
+        root.option_add('*Menu.foreground', '#FFFFFF')
+        root.option_add('*Menu.activeBackground', '#404040')
+        root.option_add('*Menu.activeForeground', '#FFFFFF')
+        root.option_add('*Menu.selectColor', '#FFFFFF')
+        
+        # Menü çubuğu oluştur
+        self.menubar = tk.Menu(root)
+        root.config(menu=self.menubar)
+        
+        # File menüsü
+        file_menu = tk.Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="File", menu=file_menu)
+        file_menu.add_command(label="New Tab", command=self.add_tab, accelerator="⌘T" if sys.platform == "darwin" else "Ctrl+T")
+        file_menu.add_command(label="Close Tab", command=self.close_current_tab, accelerator="⌘⌫" if sys.platform == "darwin" else "Ctrl+Backspace")
+        file_menu.add_separator()
+        file_menu.add_command(label="Exit", command=self.on_closing)
+        
+        # Settings menüsü
+        settings_menu = tk.Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="Settings", menu=settings_menu)
+        settings_menu.add_command(label="Preferences", command=self.show_settings)
         
         # Configden path'leri oku
         self.load_config()
@@ -202,23 +289,6 @@ class LogSearcherGUI:
         # Ana container
         main_container = ttk.Frame(root)
         main_container.pack(fill="both", expand=True, padx=10, pady=5)
-        
-        # Üst toolbar frame
-        toolbar_frame = ttk.Frame(main_container)
-        toolbar_frame.pack(fill="x", padx=5, pady=5)
-        
-        # Sol grup (Yeni Tab ve Tab Kapat)
-        left_group = ttk.Frame(toolbar_frame)
-        left_group.pack(side="left", padx=5)
-        
-        ttk.Button(left_group, text="Yeni Tab", command=self.add_tab).pack(side="left", padx=2)
-        ttk.Button(left_group, text="Tab'i Kapat", command=self.close_current_tab).pack(side="left", padx=2)
-        
-        # Sağ grup (Ayarlar)
-        right_group = ttk.Frame(toolbar_frame)
-        right_group.pack(side="right", padx=5)
-        
-        ttk.Button(right_group, text="Ayarlar", command=self.show_settings).pack(side="right", padx=2)
         
         # Notebook (tab container)
         self.notebook = ttk.Notebook(main_container)
@@ -236,6 +306,17 @@ class LogSearcherGUI:
         
         # Filtreleme için debounce timer
         self.filter_timer = None
+        
+        # Kısayol tuşlarını ekle
+        self.bind_shortcuts()
+        
+        # Tab kapatma için alternatif kısayollar
+        self.root.bind('<Command-BackSpace>', lambda e: self.close_current_tab())  # macOS için
+        self.root.bind('<Control-BackSpace>', lambda e: self.close_current_tab())  # Windows/Linux için
+        
+        # veya
+        self.root.bind('<Command-d>', lambda e: self.close_current_tab())  # macOS için
+        self.root.bind('<Control-d>', lambda e: self.close_current_tab())  # Windows/Linux için
 
     def load_config(self):
         try:
@@ -244,10 +325,27 @@ class LogSearcherGUI:
                 self.env_configs = config.get('env_configs', {})
                 
                 # Highlight ve sıralama ayarlarını yükle
-                highlight_settings = self.env_configs.get("highlight_settings", {})
+                highlight_settings = config.get("highlight_settings", {})
                 self.search_highlight_enabled = highlight_settings.get("search_highlight", True)
                 self.filter_highlight_enabled = highlight_settings.get("filter_highlight", True)
-                self.sort_by_time_enabled = highlight_settings.get("sort_by_time", True)  # Yeni ayar
+                self.sort_by_time_enabled = highlight_settings.get("sort_by_time", True)
+                
+                # Kısayol ayarlarını yükle
+                shortcut_settings = config.get("shortcuts", {
+                    "new_tab": {
+                        "win": "<Control-t>",
+                        "mac": "<Command-t>"
+                    },
+                    "close_tab": {
+                        "win": "<Control-BackSpace>",
+                        "mac": "<Command-BackSpace>"
+                    },
+                    "search_selected": {  # Yeni kısayol
+                        "win": "<Control-f>",
+                        "mac": "<Command-f>"
+                    }
+                })
+                self.shortcuts = shortcut_settings
                 
         except FileNotFoundError:
             # Varsayılan config
@@ -256,10 +354,22 @@ class LogSearcherGUI:
                 "SB": {"paths": [], "profiles": {}},
                 "PROD": {"paths": [], "profiles": {}}
             }
+            # Varsayılan kısayollar
+            self.shortcuts = {
+                "new_tab": {
+                    "win": "<Control-t>",
+                    "mac": "<Command-t>"
+                },
+                "close_tab": {
+                    "win": "<Control-BackSpace>",
+                    "mac": "<Command-BackSpace>"
+                },
+                "search_selected": {  # Yeni kısayol
+                    "win": "<Control-f>",
+                    "mac": "<Command-f>"
+                }
+            }
             self.save_config()
-            self.search_highlight_enabled = True
-            self.filter_highlight_enabled = True
-            self.sort_by_time_enabled = True  # Varsayılan değer
     
     def save_config(self):
         config = {
@@ -810,7 +920,7 @@ class LogSearcherGUI:
     def show_settings(self):
         settings_window = tk.Toplevel(self.root)
         settings_window.title("Ayarlar")
-        settings_window.geometry("800x600")
+        settings_window.geometry("1000x800")  # Daha büyük pencere
         
         # Highlight ayarları için frame
         highlight_frame = ttk.LabelFrame(settings_window, text="Görünüm Ayarları")
@@ -888,13 +998,55 @@ class LogSearcherGUI:
                 "bahama_paths": bahama_paths
             }
         
+        # Kısayol ayarları için frame
+        shortcut_frame = ttk.LabelFrame(settings_window, text="Kısayol Ayarları")
+        shortcut_frame.pack(fill="x", padx=5, pady=5)
+        
+        # Platform seçimi (macOS varsayılan)
+        platform_frame = ttk.Frame(shortcut_frame)
+        platform_frame.pack(fill="x", padx=5, pady=5)
+        
+        ttk.Label(platform_frame, text="Platform:").pack(side="left")
+        # Sistem tipini kontrol et ve varsayılan değeri belirle
+        is_mac = sys.platform == "darwin"
+        platform_var = tk.StringVar(value="mac" if is_mac else "win")
+        
+        ttk.Radiobutton(platform_frame, text="Windows/Linux", 
+            variable=platform_var, value="win").pack(side="left", padx=5)
+        ttk.Radiobutton(platform_frame, text="macOS", 
+            variable=platform_var, value="mac").pack(side="left", padx=5)
+        
+        # Kısayol düzenleme alanları
+        shortcuts_frame = ttk.Frame(shortcut_frame)
+        shortcuts_frame.pack(fill="x", padx=5, pady=5)
+        
+        shortcut_entries = {}
+        row = 0
+        
+        for action, shortcuts in self.shortcuts.items():
+            ttk.Label(shortcuts_frame, text=f"{action}:").grid(row=row, column=0, padx=5, pady=2)
+            entry = ttk.Entry(shortcuts_frame)
+            entry.insert(0, shortcuts[platform_var.get()])
+            entry.grid(row=row, column=1, padx=5, pady=2, sticky="ew")
+            shortcut_entries[action] = entry
+            row += 1
+        
+        def update_shortcut_entries(*args):
+            """Platform değiştiğinde kısayolları güncelle"""
+            platform = platform_var.get()
+            for action, entry in shortcut_entries.items():
+                entry.delete(0, tk.END)
+                entry.insert(0, self.shortcuts[action][platform])
+        
+        platform_var.trace_add("write", update_shortcut_entries)
+        
         def save_settings():
             try:
                 # Highlight ve sıralama ayarlarını kaydet
                 self.env_configs["highlight_settings"] = {
                     "search_highlight": self.search_highlight_var.get(),
                     "filter_highlight": self.filter_highlight_var.get(),
-                    "sort_by_time": self.sort_by_time_var.get()  # Yeni ayar
+                    "sort_by_time": self.sort_by_time_var.get()
                 }
                 
                 # Her ortam için ayarları kaydet
@@ -910,6 +1062,14 @@ class LogSearcherGUI:
                     bahama_paths = [p.strip() for p in tabs[env]["bahama_paths"].get("1.0", "end-1c").split("\n") if p.strip()]
                     
                     self.env_configs[env]["paths"] = steller_paths + bahama_paths
+                
+                # Kısayol ayarlarını kaydet
+                platform = platform_var.get()
+                for action, entry in shortcut_entries.items():
+                    self.shortcuts[action][platform] = entry.get()
+                
+                # Kısayolları yeniden bağla
+                self.bind_shortcuts()
                 
                 self.save_config()
                 settings_window.destroy()
@@ -1090,7 +1250,12 @@ class LogSearcherGUI:
         new_tab = SearchTab(self.notebook, self)
         self.notebook.add(new_tab, text=f"Arama {self.last_tab_number}")
         self.notebook.select(new_tab)
-    
+        
+        # Kapat butonunun durumunu güncelle
+        self.update_close_button_state()
+        
+        return new_tab
+
     def close_current_tab(self):
         """Aktif tab'i kapat"""
         current = self.notebook.select()
@@ -1111,6 +1276,9 @@ class LogSearcherGUI:
             # Eğer hiç tab kalmadıysa yeni bir tane ekle
             if self.notebook.index('end') == 0:
                 self.add_tab()
+            
+            # Kapat butonunun durumunu güncelle
+            self.update_close_button_state()
 
     def get_current_tab(self):
         """Aktif tab'i döndür"""
@@ -1156,6 +1324,33 @@ class LogSearcherGUI:
         if current_tab and current_tab.is_searching:
             # Yeni tab için GUI güncellemesini başlat
             self.update_gui(current_tab)
+
+    def update_close_button_state(self):
+        """Tab sayısına göre Close Tab menü öğesinin durumunu güncelle"""
+        # File menüsünü bul
+        menu = self.root.nametowidget(self.menubar.entrycget(0, "menu"))
+        
+        # Close Tab menü öğesinin indeksini bul (New Tab'den sonra)
+        close_tab_index = 1
+        
+        if self.notebook.index('end') <= 1:
+            menu.entryconfigure(close_tab_index, state="disabled")
+        else:
+            menu.entryconfigure(close_tab_index, state="normal")
+
+    def bind_shortcuts(self):
+        """Kısayolları bağla"""
+        # Sistem tipini belirle
+        is_mac = sys.platform == "darwin"
+        platform_key = "mac" if is_mac else "win"
+        
+        # Yeni tab kısayolu
+        new_tab_shortcut = self.shortcuts["new_tab"][platform_key]
+        self.root.bind(new_tab_shortcut, lambda e: self.add_tab())
+        
+        # Tab kapatma kısayolu
+        close_tab_shortcut = self.shortcuts["close_tab"][platform_key]
+        self.root.bind(close_tab_shortcut, lambda e: self.close_current_tab())
 
 if __name__ == "__main__":
     root = tk.Tk()
