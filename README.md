@@ -1,89 +1,52 @@
-# AWS Logs GUI
+# AWS Log Searcher
 
-AWS CloudWatch loglarını görüntülemek ve filtrelemek için kullanıcı dostu bir GUI uygulaması.
+A GUI tool for searching and filtering AWS CloudWatch logs with ease.
 
-## Özellikler
+## Installation
 
-- Çoklu ortam desteği (QA, Sandbox, Production)
-- Gerçek zamanlı log görüntüleme
-- Gelişmiş filtreleme özellikleri
-- Zamana göre sıralama
-- Renkli log görüntüleme
-- Arama ve filtreleme için highlight özelliği
-- Log dışa aktarma
-- Çoklu AWS profil desteği
-
-## Gereksinimler
-
-- Python 3.8+
-- AWS CLI yapılandırılmış olmalı
-- AWS profilleri tanımlanmış olmalı
-
-## Kurulum
-
-1. Repoyu klonlayın:
+1. Clone the project:
 ```bash
-git clone https://bitbucket.org/bumin/awslogs-w-gui.git
+git clone https://github.com/yourusername/aws-log-searcher.git
+cd aws-log-searcher
 ```
 
-2. Repoyu klonladığınız dizine gidin:
+2. Create and activate virtual environment:
 ```bash
-cd awslogs-w-gui
+# macOS/Linux
+python3 -m venv venv
+source venv/bin/activate
+
+# Windows
+python3 -m venv venv
+.\venv\Scripts\activate
 ```
 
-3. Gerekli paketleri yükleyin:
+3. Install required packages:
 ```bash
-pip install -r requirements.txt --upgrade
+pip3 install -r requirements.txt
 ```
 
-## Kullanım
-
-1. Uygulamayı başlatın:
+4. Run the application:
 ```bash
-python main.py
+python3 main.py
 ```
 
-2. Ortam seçin (QA/SB/PROD)
-3. Aranacak metni girin
-4. Zaman aralığını belirleyin:
-   - Saat cinsinden (örn: "1" = son 1 saat)
-   - Veya spesifik tarih (örn: "2025-01-20 22:44:44")
-5. "Ara" butonuna tıklayın
+## Quick Access for iTerm2
 
-### Filtreleme
+Add the following alias to your `.zshrc` or `.bashrc` file for quick access in iTerm2:
 
-- Üst kısımdaki "Search" alanı AWS CloudWatch filtresi için kullanılır
-- Alt kısımdaki "Filtrele" alanı bulunan loglar içinde filtreleme yapar
-- Her iki filtrede de highlight özelliği mevcuttur
+```bash
+alias logsearch="cd /path/to/aws-log-searcher && source venv/bin/activate && python3 main.py"
+```
 
-### Ayarlar
+Now you can start the application by simply typing `logsearch` in your terminal.
 
-Ayarlar menüsünden:
-- Her ortam için AWS profilleri tanımlanabilir
-- Log pathleri düzenlenebilir
-- Highlight özellikleri açılıp kapatılabilir
-- Otomatik sıralama özelliği ayarlanabilir
+## Features
 
-## Konfigürasyon
-
-`config.json` dosyası üzerinden:
-- AWS profilleri
-- Log pathleri
-- Görünüm ayarları
-yapılandırılabilir.
-
-## Notlar
-
-- AWS profilleri önceden yapılandırılmış olmalıdır
-- Yeterli AWS izinlerine sahip olduğunuzdan emin olun
-- Çok sayıda log varsa filtreleme kullanmanız önerilir
-
-## Hata Giderme
-
-1. AWS profil hatası:
-   - AWS CLIın kurulu olduğundan emin olun
-   - Profillerin doğru yapılandırıldığını kontrol edin
-
-2. Log görüntüleme hatası:
-   - AWS izinlerinizi kontrol edin
-   - Log group pathlerinin doğruluğunu kontrol edin
+- Multi-tab support
+- Real-time log filtering
+- Path-based filtering
+- Quick search with right-click menu
+- Keyboard shortcuts
+- Time-based sorting
+- Color-coded log levels

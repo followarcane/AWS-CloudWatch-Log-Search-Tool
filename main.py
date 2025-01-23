@@ -29,6 +29,7 @@ class SearchTab(ttk.Frame):
         self.time_var = tk.StringVar(value="1")
         self.env_var = tk.StringVar(value="QA")
         self.status_var = tk.StringVar()
+        self.path_filter_var = tk.StringVar(value="Hepsi")
         
         # GUI'yi oluştur
         self.setup_gui()
@@ -90,13 +91,49 @@ class SearchTab(ttk.Frame):
         self.clear_button = ttk.Button(button_frame, text="Temizle", command=self.clear_content)
         self.clear_button.pack(side="left", padx=2)
         
-        # Filtreleme frame'i - ayrı bir frame olarak ekle
+        # Filtreleme frame'i
         filter_frame = ttk.Frame(self)
         filter_frame.pack(fill="x", padx=5, pady=5)
         
-        ttk.Label(filter_frame, text="Filtrele:").pack(side="left", padx=5)
+        # Filtreleme alanı (sol tarafta)
+        filter_left_frame = ttk.Frame(filter_frame)
+        filter_left_frame.pack(side="left")
+        
+        ttk.Label(filter_left_frame, text="Filtrele:").pack(side="left", padx=5)
         self.filter_var.trace_add("write", lambda *args: self.main_app.debounce_filter(self))
-        ttk.Entry(filter_frame, textvariable=self.filter_var, width=40).pack(side="left", padx=5)
+        ttk.Entry(filter_left_frame, textvariable=self.filter_var, width=40).pack(side="left", padx=5)
+        
+        # Boşluk bırakmak için frame
+        ttk.Frame(filter_frame).pack(side="left", padx=10)
+        
+        # Path filtresi (sağ tarafta)
+        path_filter_frame = ttk.Frame(filter_frame)
+        path_filter_frame.pack(side="left")
+        
+        ttk.Label(path_filter_frame, text="Path:").pack(side="left", padx=5)
+        self.path_filter = ttk.Combobox(path_filter_frame, 
+            textvariable=self.path_filter_var,
+            width=40,
+            state="readonly"
+        )
+        self.path_filter.pack(side="left", padx=5)
+        
+        # Path listesini güncelle
+        def update_path_list(*args):
+            paths = ["Hepsi"]
+            env = self.env_var.get()
+            config = self.main_app.env_configs.get(env, {"paths": []})
+            paths.extend(config["paths"])
+            self.path_filter['values'] = paths
+            if self.path_filter_var.get() not in paths:
+                self.path_filter_var.set("Hepsi")
+        
+        # Environment değiştiğinde path listesini güncelle
+        self.env_var.trace_add("write", update_path_list)
+        update_path_list()  # İlk yükleme
+        
+        # Path değiştiğinde filtrelemeyi uygula
+        self.path_filter_var.trace_add("write", lambda *args: self.apply_path_filter())
         
         # Text widget
         self.text_widget = tk.Text(self, wrap=tk.WORD, 
@@ -248,6 +285,175 @@ class SearchTab(ttk.Frame):
         except:
             pass
 
+    def apply_path_filter(self):
+        """Path bazlı filtreleme uygula"""
+        try:
+            selected_path = self.path_filter_var.get()
+            
+            # Text widget'ı güncelle
+            self.text_widget.configure(state='normal')
+            
+            # Eğer Hepsi seçiliyse ve filtre yoksa tüm içeriği göster
+            if selected_path == "Hepsi":
+                if not self.filter_var.get():
+                    self.text_widget.delete(1.0, tk.END)
+                    self.text_widget.insert(tk.END, self.full_log_content)
+                    self.main_app.reapply_colors(self)
+                    search_term = self.search_var.get()
+                    if search_term:
+                        self.main_app.highlight_text(self, "1.0", "end", search_term, "search_highlight")
+                else:
+                    # Normal filtrelemeyi uygula
+                    self.main_app.filter_logs(self)
+                
+                self.text_widget.configure(state='disabled')
+                return
+            
+            # Seçili path'e göre logları filtrele
+            filtered_content = []
+            current_log = []
+            include_log = False
+            
+            for line in self.full_log_content.split('\n'):
+                # Yeni log başlangıcı
+                if line.strip() and len(line.split()) >= 2 and line.split()[1].count(':') == 2:
+                    # Önceki logu ekle
+                    if current_log and include_log:
+                        filtered_content.extend(current_log)
+                        filtered_content.append('')  # Boş satır ekle
+                    
+                    current_log = [line]
+                    include_log = selected_path in line
+                elif line.strip():
+                    current_log.append(line)
+            
+            # Son logu ekle
+            if current_log and include_log:
+                filtered_content.extend(current_log)
+            
+            # Text widget'ı güncelle
+            self.text_widget.delete(1.0, tk.END)
+            self.text_widget.insert(tk.END, '\n'.join(filtered_content))
+            
+            # Renklendirmeleri uygula
+            self.main_app.reapply_colors(self)
+            
+            # Arama terimini highlight et
+            search_term = self.search_var.get()
+            if search_term:
+                self.main_app.highlight_text(self, "1.0", "end", search_term, "search_highlight")
+            
+            # Normal filtrelemeyi de uygula
+            if self.filter_var.get():
+                self.main_app.filter_logs(self)
+            
+        except Exception as e:
+            print(f"Path filtreleme hatası: {e}")
+        finally:
+            self.text_widget.configure(state='disabled')
+
+    def highlight_text(self, start, end, text, tag):
+        """Verilen metni highlight et"""
+        if not text:
+            return
+            
+        # Highlight ayarlarını kontrol et
+        if tag == "search_highlight" and not self.main_app.search_highlight_enabled:
+            return
+        if tag == "filter_highlight" and not self.main_app.filter_highlight_enabled:
+            return
+            
+        # Arama için kırmızı, filtreleme için sarı highlight
+        if tag == "search_highlight":
+            self.text_widget.tag_configure(tag, background="#aa0000", foreground="#ffffff")
+        else:
+            self.text_widget.tag_configure(tag, background="#aaaa00", foreground="#000000")
+        
+        count = tk.IntVar()
+        pos = start
+        while True:
+            pos = self.text_widget.search(text, pos, end, count=count, nocase=True)
+            if not pos:
+                break
+            self.text_widget.tag_add(tag, pos, f"{pos}+{count.get()}c")
+            pos = f"{pos}+{count.get()}c"
+
+    def is_valid_filter_text(self, text):
+        """Filtreleme metninin geçerli olup olmadığını kontrol et"""
+        if not text:
+            return False
+            
+        # Minimum uzunluk kontrolü
+        if len(text) < 2:
+            return False
+            
+        # Sadece özel karakterlerden oluşuyorsa geçersiz
+        special_chars = '"\'?!,.:;-_=+<>[]{}()|\\/@#$%^&*'
+        special_char_count = sum(1 for c in text if c in special_chars)
+        if special_char_count == len(text):
+            return False
+            
+        # Ardışık özel karakter kontrolü
+        consecutive_special = 0
+        for c in text:
+            if c in special_chars:
+                consecutive_special += 1
+                if consecutive_special > 2:  # En fazla 2 ardışık özel karakter
+                    return False
+            else:
+                consecutive_special = 0
+        
+        return True
+
+    def reapply_colors(self):
+        """Tüm loglar için renklendirmeleri tekrar uygula"""
+        try:
+            content = self.text_widget.get("1.0", tk.END)
+            lines = content.split('\n')
+            
+            self.text_widget.delete("1.0", tk.END)
+            
+            for line in lines:
+                if not line.strip():
+                    self.text_widget.insert(tk.END, "\n")
+                    continue
+                    
+                # Log satırı mı kontrol et
+                parts = line.split(' [')
+                if len(parts) >= 2:
+                    timestamp = parts[0]
+                    level_end = parts[1].find(']')
+                    if level_end != -1:
+                        level = parts[1][:level_end]
+                        message = '['.join(parts[1:])
+                        
+                        # Log seviyesine göre renk belirle
+                        if "ERROR" in level:
+                            level_color = "#ff5555"
+                        elif "WARN" in level:
+                            level_color = "#ffb86c"
+                        else:
+                            level_color = "#50fa7b"
+                        
+                        # Renkli olarak ekle
+                        self.text_widget.insert(tk.END, f"{timestamp} ", "timestamp")
+                        self.text_widget.insert(tk.END, f"[{level}] ", f"level_{level_color}")
+                        self.text_widget.insert(tk.END, f"{message}\n", "message")
+                else:
+                    # Trace log veya diğer satırlar
+                    self.text_widget.insert(tk.END, f"{line}\n", "message")
+            
+            # Renklendirme tag'lerini ayarla
+            self.text_widget.tag_configure("timestamp", foreground="#8be9fd")
+            self.text_widget.tag_configure("message", foreground="white")
+            
+            for color in ["#ff5555", "#ffb86c", "#50fa7b"]:
+                self.text_widget.tag_configure(f"level_{color}", foreground=color)
+                
+        except Exception as e:
+            print(f"Renklendirme hatası: {e}")
+            self.text_widget.configure(state='disabled')
+
 class LogSearcherGUI:
     def __init__(self, root):
         self.root = root
@@ -258,7 +464,28 @@ class LogSearcherGUI:
         # Stil tanımlamaları
         style = ttk.Style()
         
-        # Menü stili için özel renk tanımlamaları
+        # Notebook (tab bar) stili
+        style.configure("Custom.TNotebook", 
+            background='#1a1a1a',  # Koyu arka plan
+            borderwidth=0,         # Kenarlık yok
+            padding=0
+        )
+        
+        style.configure("Custom.TNotebook.Tab",
+            padding=[10, 5],      # Yatay ve dikey padding
+            background='#2d2d2d', # Tab normal rengi
+            foreground='#808080', # Tab normal yazı rengi
+            lightcolor='#2d2d2d',
+            borderwidth=0,        # Kenarlık yok
+        )
+        
+        style.map("Custom.TNotebook.Tab",
+            background=[("selected", '#363636')],  # Seçili tab rengi
+            foreground=[("selected", '#ffffff')],  # Seçili tab yazı rengi
+            expand=[("selected", [1, 1, 1, 0])]    # Seçili tab'i biraz büyüt
+        )
+        
+        # Menü stili
         root.option_add('*Menu.background', '#2D2D2D')
         root.option_add('*Menu.foreground', '#FFFFFF')
         root.option_add('*Menu.activeBackground', '#404040')
@@ -272,8 +499,10 @@ class LogSearcherGUI:
         # File menüsü
         file_menu = tk.Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label="File", menu=file_menu)
-        file_menu.add_command(label="New Tab", command=self.add_tab, accelerator="⌘T" if sys.platform == "darwin" else "Ctrl+T")
-        file_menu.add_command(label="Close Tab", command=self.close_current_tab, accelerator="⌘⌫" if sys.platform == "darwin" else "Ctrl+Backspace")
+        file_menu.add_command(label="New Tab", command=self.add_tab, 
+            accelerator="⌘T" if sys.platform == "darwin" else "Ctrl+T")
+        file_menu.add_command(label="Close Tab", command=self.close_current_tab, 
+            accelerator="⌘⌫" if sys.platform == "darwin" else "Ctrl+Backspace")
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.on_closing)
         
@@ -291,8 +520,8 @@ class LogSearcherGUI:
         main_container.pack(fill="both", expand=True, padx=10, pady=5)
         
         # Notebook (tab container)
-        self.notebook = ttk.Notebook(main_container)
-        self.notebook.pack(fill="both", expand=True, padx=5, pady=5)
+        self.notebook = ttk.Notebook(main_container, style="Custom.TNotebook")
+        self.notebook.pack(fill="both", expand=True, padx=0, pady=0)  # padding'i kaldır
         
         # Tab değişikliğini takip et
         self.notebook.bind('<<NotebookTabChanged>>', self.on_tab_changed)
@@ -1162,6 +1391,7 @@ class LogSearcherGUI:
                             level_color = "#50fa7b"
                         
                         # Renkli olarak ekle
+                        current_pos = current_tab.text_widget.index("end-1c")
                         current_tab.text_widget.insert(tk.END, f"{timestamp} ", "timestamp")
                         current_tab.text_widget.insert(tk.END, f"[{level}] ", f"level_{level_color}")
                         current_tab.text_widget.insert(tk.END, f"{message}\n", "message")
