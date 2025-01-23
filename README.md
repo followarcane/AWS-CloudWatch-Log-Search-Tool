@@ -23,6 +23,7 @@ python3 -m venv venv
 3. Install required packages:
 ```bash
 pip3 install -r requirements.txt
+brew install python-tk
 ```
 
 4. Run the application:
