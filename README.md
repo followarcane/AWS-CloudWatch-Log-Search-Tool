@@ -6,7 +6,7 @@ A GUI tool for searching and filtering AWS CloudWatch logs with ease.
 
 1. Clone the project:
 ```bash
-cd aws-log-searcher
+cd cd Awslogs w/ GUI
 ```
 
 2. Create and activate virtual environment:
@@ -54,6 +54,8 @@ Now you can start the application by simply typing `logsearch` in your terminal.
 - Real-time AWS CloudWatch log searching
 - Quick search within logs: `⌘F` (macOS) / `Ctrl+F` (Windows/Linux)
 - Search selected text in new tab: `⌘D` (macOS) / `Ctrl+D` (Windows/Linux)
+- Start search: `Enter`
+- Stop search: `⌘⇧C` (macOS) / `Ctrl+Shift+C` (Windows/Linux)
 - Right-click context menu for quick search options
 
 ### Filtering & Organization

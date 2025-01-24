@@ -80,10 +80,19 @@ class SearchTab(ttk.Frame):
         search_frame.pack(side="left", padx=5)
         
         ttk.Label(search_frame, text="Search:").pack(side="left", padx=5)
-        ttk.Entry(search_frame, textvariable=self.search_var, width=40).pack(side="left", padx=5)
+        search_entry = ttk.Entry(search_frame, textvariable=self.search_var, width=40)
+        search_entry.pack(side="left", padx=5)
+        
+        # Enter tuşunu search entry'e bağla
+        search_entry.bind('<Return>', lambda e: self.start_search())
         
         ttk.Label(search_frame, text="Start Time:").pack(side="left", padx=5)
-        ttk.Entry(search_frame, textvariable=self.time_var, width=10).pack(side="left", padx=5)
+        time_entry = ttk.Entry(search_frame, textvariable=self.time_var, width=10)
+        time_entry.pack(side="left", padx=5)
+        
+        # Enter tuşunu time entry'e de bağla
+        time_entry.bind('<Return>', lambda e: self.start_search())
+        
         ttk.Label(search_frame, text="hours ago").pack(side="left")
         
         # Butonlar
@@ -95,6 +104,12 @@ class SearchTab(ttk.Frame):
         
         self.stop_button = ttk.Button(button_frame, text="Stop", command=self.stop_search, state="disabled")
         self.stop_button.pack(side="left", padx=2)
+        
+        # Command+Shift+C (macOS) veya Ctrl+Shift+C (Windows/Linux) ile Stop
+        if sys.platform == "darwin":
+            self.main_app.root.bind('<Command-Shift-C>', lambda e: self.stop_search())
+        else:
+            self.main_app.root.bind('<Control-Shift-C>', lambda e: self.stop_search())
         
         self.clear_button = ttk.Button(button_frame, text="Clear", command=self.clear_content)
         self.clear_button.pack(side="left", padx=2)
@@ -193,11 +208,14 @@ class SearchTab(ttk.Frame):
         self.stop_search()
         self.clear_content()
         
-        filter_pattern = self.get_filter_pattern()
-        if not filter_pattern:
+        # Arama değerini al
+        search_value = self.search_var.get()
+        if not search_value:
             self.status_var.set("Lütfen arama değeri girin")
             return
             
+        filter_pattern = f'"{search_value}"'  # Tırnak işaretleriyle çevrele
+        
         self.is_searching = True
         self.search_completed = False
         self.toggle_buttons(searching=True)
@@ -737,6 +755,10 @@ class LogSearcherGUI:
                     "search_selected": {
                         "win": "<Control-d>",
                         "mac": "<Command-d>"
+                    },
+                    "stop_search": {  # Yeni eklenen shortcut
+                        "win": "<Control-Shift-C>",
+                        "mac": "<Command-Shift-C>"
                     }
                 })
                 self.shortcuts = shortcut_settings
@@ -761,6 +783,10 @@ class LogSearcherGUI:
                 "search_selected": {
                     "win": "<Control-d>",
                     "mac": "<Command-d>"
+                },
+                "stop_search": {  # Yeni eklenen shortcut
+                    "win": "<Control-Shift-C>",
+                    "mac": "<Command-Shift-C>"
                 }
             }
             self.save_config()
@@ -873,7 +899,7 @@ class LogSearcherGUI:
                 "--profile",
                 profile,
                 "--start",
-                f"{tab.time_var.get().strip()}h ago",  # Tırnak işaretlerini kaldır
+                f"{tab.time_var.get().strip()}h ago",
                 "--query=log"
             ]
             
@@ -883,7 +909,6 @@ class LogSearcherGUI:
             command_str = " ".join(cmd)
             print(f"\nExecuting command: {command_str}")
             
-            # macOS için close_fds=True ekle
             process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
@@ -892,7 +917,7 @@ class LogSearcherGUI:
                 bufsize=1,
                 encoding='utf-8',
                 universal_newlines=True,
-                close_fds=True  # macOS için önemli
+                close_fds=True
             )
             
             log_count = 0
