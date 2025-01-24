@@ -221,20 +221,35 @@ class SearchTab(ttk.Frame):
         self.is_searching = False
         self.status_var.set("Arama durduruluyor...")
         
+        # Aktif thread'leri durdur
         for thread in self.active_threads:
             if thread.is_alive():
                 thread.join(timeout=0.1)
         self.active_threads.clear()
         
+        # Kuyruktaki logları işle
         while not self.log_queue.empty():
             try:
                 self.log_queue.get_nowait()
             except queue.Empty:
                 break
-                
+        
+        # Arama tamamlandı olarak işaretle
+        self.search_completed = True
+        
+        # GUI'yi güncelle
         self.status_var.set("Arama durduruldu!")
         self.progress_bar.stop()
         self.toggle_buttons(searching=False)
+        
+        # Logları sırala ve highlight uygula
+        if self.main_app.sort_by_time_enabled:
+            self.main_app.sort_logs_by_time()
+        
+        # Aranan kelimeyi highlight et
+        search_term = self.search_var.get()
+        if search_term:
+            self.highlight_search(search_term)
 
     def toggle_buttons(self, searching=True):
         """Butonların durumunu güncelle"""
@@ -858,7 +873,7 @@ class LogSearcherGUI:
                 "--profile",
                 profile,
                 "--start",
-                tab.time_var.get().strip() + "h ago",  # Tab'in kendi time_var'ını kullan
+                f"{tab.time_var.get().strip()}h ago",  # Tırnak işaretlerini kaldır
                 "--query=log"
             ]
             
@@ -868,6 +883,7 @@ class LogSearcherGUI:
             command_str = " ".join(cmd)
             print(f"\nExecuting command: {command_str}")
             
+            # macOS için close_fds=True ekle
             process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
@@ -875,7 +891,8 @@ class LogSearcherGUI:
                 text=True,
                 bufsize=1,
                 encoding='utf-8',
-                universal_newlines=True
+                universal_newlines=True,
+                close_fds=True  # macOS için önemli
             )
             
             log_count = 0
