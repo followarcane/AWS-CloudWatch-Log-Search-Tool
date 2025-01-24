@@ -6,7 +6,7 @@ A GUI tool for searching and filtering AWS CloudWatch logs with ease.
 
 1. Clone the project:
 ```bash
-cd cd Awslogs w/ GUI
+cd Awslogs w/ GUI
 ```
 
 2. Create and activate virtual environment:
