@@ -13,7 +13,7 @@ import os
 import sys
 
 class SearchTab(ttk.Frame):
-    """Her bir arama tab'i için frame"""
+    """Frame for each search tab"""
     def __init__(self, parent, main_app):
         super().__init__(parent)
         self.main_app = main_app
@@ -23,7 +23,7 @@ class SearchTab(ttk.Frame):
         self.is_searching = False
         self.search_completed = False
         
-        # GUI değişkenleri
+        # GUI variables
         self.search_var = tk.StringVar()
         self.filter_var = tk.StringVar()
         self.time_var = tk.StringVar(value="1")
@@ -31,13 +31,13 @@ class SearchTab(ttk.Frame):
         self.status_var = tk.StringVar()
         self.path_filter_var = tk.StringVar(value="All")
         
-        # Search dialog için variable
+        # Variable for search dialog
         self.search_dialog = None
         
-        # GUI'yi oluştur
+        # Create GUI
         self.setup_gui()
         
-        # Sağ tık menüsü ekle
+        # Add right-click menu
         self.context_menu = tk.Menu(self, tearoff=0)
         shortcut_text = "⌘D" if sys.platform == "darwin" else "Ctrl+D"
         self.context_menu.add_command(
@@ -45,10 +45,10 @@ class SearchTab(ttk.Frame):
             command=self.search_selected_text
         )
         
-        # Text widget'a sağ tık olayını bağla
+        # Bind right-click event to text widget
         self.text_widget.bind("<Button-3>", self.show_context_menu)
         
-        # Kısayolu bağla
+        # Bind shortcut
         is_mac = sys.platform == "darwin"
         if is_mac:
             self.text_widget.bind("<Command-f>", self.show_search_dialog)
@@ -61,11 +61,11 @@ class SearchTab(ttk.Frame):
         self.bind('<Visibility>', self.on_tab_change)
 
     def setup_gui(self):
-        # Kontrol frame'i
+        # Control frame
         control_frame = ttk.Frame(self)
         control_frame.pack(fill="x", padx=5, pady=5)
         
-        # Environment seçimi
+        # Environment selection
         env_frame = ttk.Frame(control_frame)
         env_frame.pack(side="left", padx=5)
         
@@ -75,7 +75,7 @@ class SearchTab(ttk.Frame):
         env_menu = ttk.OptionMenu(env_frame, self.env_var, "QA", *env_choices)
         env_menu.pack(side="left", padx=5)
         
-        # Arama kriterleri
+        # Search criteria
         search_frame = ttk.Frame(control_frame)
         search_frame.pack(side="left", padx=5)
         
@@ -83,19 +83,19 @@ class SearchTab(ttk.Frame):
         search_entry = ttk.Entry(search_frame, textvariable=self.search_var, width=40)
         search_entry.pack(side="left", padx=5)
         
-        # Enter tuşunu search entry'e bağla
+        # Bind Enter key to search entry
         search_entry.bind('<Return>', lambda e: self.start_search())
         
         ttk.Label(search_frame, text="Start Time:").pack(side="left", padx=5)
         time_entry = ttk.Entry(search_frame, textvariable=self.time_var, width=10)
         time_entry.pack(side="left", padx=5)
         
-        # Enter tuşunu time entry'e de bağla
+        # Also bind Enter key to time entry
         time_entry.bind('<Return>', lambda e: self.start_search())
         
         ttk.Label(search_frame, text="hours ago").pack(side="left")
         
-        # Butonlar
+        # Buttons
         button_frame = ttk.Frame(control_frame)
         button_frame.pack(side="left", padx=5)
         
@@ -105,7 +105,7 @@ class SearchTab(ttk.Frame):
         self.stop_button = ttk.Button(button_frame, text="Stop", command=self.stop_search, state="disabled")
         self.stop_button.pack(side="left", padx=2)
         
-        # Command+Shift+C (macOS) veya Ctrl+Shift+C (Windows/Linux) ile Stop
+        # Stop with Command+Shift+C (macOS) or Ctrl+Shift+C (Windows/Linux)
         if sys.platform == "darwin":
             self.main_app.root.bind('<Command-Shift-C>', lambda e: self.stop_search())
         else:
@@ -114,11 +114,11 @@ class SearchTab(ttk.Frame):
         self.clear_button = ttk.Button(button_frame, text="Clear", command=self.clear_content)
         self.clear_button.pack(side="left", padx=2)
         
-        # Filtreleme frame'i
+        # Filtering frame
         filter_frame = ttk.Frame(self)
         filter_frame.pack(fill="x", padx=5, pady=5)
         
-        # Filtreleme alanı (sol tarafta)
+        # Filtering area (left side)
         filter_left_frame = ttk.Frame(filter_frame)
         filter_left_frame.pack(side="left")
         
@@ -126,10 +126,10 @@ class SearchTab(ttk.Frame):
         self.filter_var.trace_add("write", lambda *args: self.main_app.debounce_filter(self))
         ttk.Entry(filter_left_frame, textvariable=self.filter_var, width=40).pack(side="left", padx=5)
         
-        # Boşluk bırakmak için frame
+        # Frame for spacing
         ttk.Frame(filter_frame).pack(side="left", padx=10)
         
-        # Path filtresi (sağ tarafta)
+        # Path filter (right side)
         path_filter_frame = ttk.Frame(filter_frame)
         path_filter_frame.pack(side="left")
         
@@ -141,7 +141,7 @@ class SearchTab(ttk.Frame):
         )
         self.path_filter.pack(side="left", padx=5)
         
-        # Path listesini güncelle
+        # Update path list
         def update_path_list(*args):
             paths = ["All"]
             env = self.env_var.get()
@@ -151,11 +151,11 @@ class SearchTab(ttk.Frame):
             if self.path_filter_var.get() not in paths:
                 self.path_filter_var.set("All")
         
-        # Environment değiştiğinde path listesini güncelle
+        # Update path list when environment changes
         self.env_var.trace_add("write", update_path_list)
-        update_path_list()  # İlk yükleme
+        update_path_list()  # Initial load
         
-        # Path değiştiğinde filtrelemeyi uygula
+        # Apply filtering when path changes
         self.path_filter_var.trace_add("write", lambda *args: self.apply_path_filter())
         
         # Text widget
@@ -166,7 +166,7 @@ class SearchTab(ttk.Frame):
         )
         self.text_widget.pack(fill="both", expand=True)
         
-        # Quick search için tag oluştur
+        # Create tag for quick search
         self.text_widget.tag_configure("quick_search", background="yellow", foreground="black")
         
         # Scrollbar
@@ -174,7 +174,7 @@ class SearchTab(ttk.Frame):
         scrollbar.pack(side="right", fill="y")
         self.text_widget.configure(yscrollcommand=scrollbar.set)
         
-        # Text widget'ı salt okunur yap
+        # Make text widget read-only
         self.text_widget.configure(state='disabled')
         
         # Status bar
@@ -182,7 +182,7 @@ class SearchTab(ttk.Frame):
         self.progress_bar.pack(fill="x", padx=5, pady=2)
         ttk.Label(self, textvariable=self.status_var).pack(fill="x", padx=5)
 
-        # Configure styles
+        # Style definitions
         style = ttk.Style()
         style.configure("Search.TFrame", 
             background='#2d2d2d',
@@ -197,31 +197,31 @@ class SearchTab(ttk.Frame):
         )
 
     def update_full_content(self, content):
-        """Log içeriğini güncelle"""
+        """Update log content"""
         self.full_log_content = content
 
     def start_search(self):
-        """Bu tab için aramayı başlat"""
+        """Start search for this tab"""
         if self.is_searching:
             return
             
         self.stop_search()
         self.clear_content()
         
-        # Arama değerini al
+        # Get search value
         search_value = self.search_var.get()
         if not search_value:
-            self.status_var.set("Lütfen arama değeri girin")
+            self.status_var.set("Please enter a search value")
             return
             
-        filter_pattern = f'"{search_value}"'  # Tırnak işaretleriyle çevrele
+        filter_pattern = f'"{search_value}"'  # Enclose in quotes
         
         self.is_searching = True
         self.search_completed = False
         self.toggle_buttons(searching=True)
         self.progress_bar.start()
         
-        # Her path için ayrı thread başlat
+        # Start a separate thread for each path
         paths_and_profiles = self.main_app.get_current_paths_and_profiles()
         for path, profile in paths_and_profiles:
             thread = threading.Thread(
@@ -235,82 +235,82 @@ class SearchTab(ttk.Frame):
         self.main_app.update_gui(self)
 
     def stop_search(self):
-        """Bu tab için aramayı durdur"""
+        """Stop search for this tab"""
         self.is_searching = False
-        self.status_var.set("Arama durduruluyor...")
+        self.status_var.set("Stopping search...")
         
-        # Aktif thread'leri durdur
+        # Stop active threads
         for thread in self.active_threads:
             if thread.is_alive():
                 thread.join(timeout=0.1)
         self.active_threads.clear()
         
-        # Kuyruktaki logları işle
+        # Process logs in queue
         while not self.log_queue.empty():
             try:
                 self.log_queue.get_nowait()
             except queue.Empty:
                 break
         
-        # Arama tamamlandı olarak işaretle
+        # Mark search as completed
         self.search_completed = True
         
-        # GUI'yi güncelle
-        self.status_var.set("Arama durduruldu!")
+        # Update GUI
+        self.status_var.set("Search stopped!")
         self.progress_bar.stop()
         self.toggle_buttons(searching=False)
         
-        # Logları sırala ve highlight uygula
+        # Sort logs and apply highlight
         if self.main_app.sort_by_time_enabled:
             self.main_app.sort_logs_by_time()
         
-        # Aranan kelimeyi highlight et
+        # Highlight searched term
         search_term = self.search_var.get()
         if search_term:
             self.highlight_search(search_term)
 
     def toggle_buttons(self, searching=True):
-        """Butonların durumunu güncelle"""
+        """Update button states"""
         state = "disabled" if searching else "normal"
         self.search_button.configure(state=state)
         self.clear_button.configure(state=state)
         self.stop_button.configure(state="normal" if searching else "disabled")
 
     def get_filter_pattern(self):
-        """Arama değerini al"""
+        """Get search value"""
         search_value = self.search_var.get()
         if not search_value:
             return None
         return f'"{search_value}"'
 
     def clear_content(self):
-        """Tab'in içeriğini temizle"""
-        # Text widget'ı temizle
+        """Clear tab content"""
+        # Clear text widget
         self.text_widget.configure(state='normal')
         self.text_widget.delete(1.0, "end")
         self.text_widget.configure(state='disabled')
         
-        # Status ve progress bar'ı sıfırla
+        # Reset status and progress bar
         self.status_var.set("")
         self.progress_bar.stop()
         
-        # Filtreleme alanını temizle
+        # Clear filtering area
         self.filter_var.set("")
         
-        # Log içeriğini sıfırla
+        # Reset log content
         self.full_log_content = ""
         
-        # Tag'leri temizle
+        # Clear tags
         for tag in self.text_widget.tag_names():
             self.text_widget.tag_delete(tag)
         
-        # Arama durumlarını sıfırla
+        # Reset search states
         self.search_completed = False
 
     def show_context_menu(self, event):
-        """Sağ tık menüsünü göster"""
+        """Show right-click menu"""
         try:
-            # Seçili metin varsa menüyü göster
+            # Show menu if text is selected
             if self.text_widget.tag_ranges("sel"):
                 self.context_menu.post(event.x_root, event.y_root)
         except:
@@ -352,14 +352,14 @@ class SearchTab(ttk.Frame):
             return "break"
 
     def apply_path_filter(self):
-        """Path bazlı filtreleme uygula"""
+        """Apply path-based filtering"""
         try:
             selected_path = self.path_filter_var.get()
             
-            # Text widget'ı güncelle
+            # Update text widget
             self.text_widget.configure(state='normal')
             
-            # Eğer All seçiliyse ve filtre yoksa tüm içeriği göster
+            # Show all content if "All" is selected and no filter is applied
             if selected_path == "All":
                 if not self.filter_var.get():
                     self.text_widget.delete(1.0, tk.END)
@@ -369,67 +369,67 @@ class SearchTab(ttk.Frame):
                     if search_term:
                         self.main_app.highlight_text(self, "1.0", "end", search_term, "search_highlight")
                 else:
-                    # Normal filtrelemeyi uygula
+                    # Apply normal filtering
                     self.main_app.filter_logs(self)
                 
                 self.text_widget.configure(state='disabled')
                 return
             
-            # Seçili path'e göre logları filtrele
+            # Filter logs based on selected path
             filtered_content = []
             current_log = []
             include_log = False
             
             for line in self.full_log_content.split('\n'):
-                # Yeni log başlangıcı
+                # New log start
                 if line.strip() and len(line.split()) >= 2 and line.split()[1].count(':') == 2:
-                    # Önceki logu ekle
+                    # Add previous log
                     if current_log and include_log:
                         filtered_content.extend(current_log)
-                        filtered_content.append('')  # Boş satır ekle
+                        filtered_content.append('')  # Add empty line
                     
                     current_log = [line]
                     include_log = selected_path in line
                 elif line.strip():
                     current_log.append(line)
             
-            # Son logu ekle
+            # Add last log
             if current_log and include_log:
                 filtered_content.extend(current_log)
             
-            # Text widget'ı güncelle
+            # Update text widget
             self.text_widget.delete(1.0, tk.END)
             self.text_widget.insert(tk.END, '\n'.join(filtered_content))
             
-            # Renklendirmeleri uygula
+            # Apply coloring
             self.main_app.reapply_colors(self)
             
-            # Arama terimini highlight et
+            # Highlight search term
             search_term = self.search_var.get()
             if search_term:
                 self.main_app.highlight_text(self, "1.0", "end", search_term, "search_highlight")
             
-            # Normal filtrelemeyi de uygula
+            # Apply normal filtering
             if self.filter_var.get():
                 self.main_app.filter_logs(self)
             
         except Exception as e:
-            print(f"Path filtreleme hatası: {e}")
+            print(f"Path filtering error: {e}")
         finally:
             self.text_widget.configure(state='disabled')
 
     def highlight_text(self, start, end, text, tag):
-        """Verilen metni highlight et"""
+        """Highlight given text"""
         if not text:
             return
             
-        # Highlight ayarlarını kontrol et
+        # Check highlight settings
         if tag == "search_highlight" and not self.main_app.search_highlight_enabled:
             return
         if tag == "filter_highlight" and not self.main_app.filter_highlight_enabled:
             return
             
-        # Arama için kırmızı, filtreleme için sarı highlight
+        # Red for search, yellow for filter highlight
         if tag == "search_highlight":
             self.text_widget.tag_configure(tag, background="#aa0000", foreground="#ffffff")
         else:
@@ -445,26 +445,26 @@ class SearchTab(ttk.Frame):
             pos = f"{pos}+{count.get()}c"
 
     def is_valid_filter_text(self, text):
-        """Filtreleme metninin geçerli olup olmadığını kontrol et"""
+        """Check if filter text is valid"""
         if not text:
             return False
             
-        # Minimum uzunluk kontrolü
+        # Minimum length check
         if len(text) < 2:
             return False
             
-        # Sadece özel karakterlerden oluşuyorsa geçersiz
+        # Invalid if only special characters
         special_chars = '"\'?!,.:;-_=+<>[]{}()|\\/@#$%^&*'
         special_char_count = sum(1 for c in text if c in special_chars)
         if special_char_count == len(text):
             return False
             
-        # Ardışık özel karakter kontrolü
+        # Consecutive special character check
         consecutive_special = 0
         for c in text:
             if c in special_chars:
                 consecutive_special += 1
-                if consecutive_special > 2:  # En fazla 2 ardışık özel karakter
+                if consecutive_special > 2:  # Max 2 consecutive special characters
                     return False
             else:
                 consecutive_special = 0
@@ -472,7 +472,7 @@ class SearchTab(ttk.Frame):
         return True
 
     def reapply_colors(self):
-        """Tüm loglar için renklendirmeleri tekrar uygula"""
+        """Reapply coloring to all logs"""
         try:
             content = self.text_widget.get("1.0", tk.END)
             lines = content.split('\n')
@@ -484,7 +484,7 @@ class SearchTab(ttk.Frame):
                     self.text_widget.insert(tk.END, "\n")
                     continue
                     
-                # Log satırı mı kontrol et
+                # Check if it's a log line
                 parts = line.split(' [')
                 if len(parts) >= 2:
                     timestamp = parts[0]
@@ -493,7 +493,7 @@ class SearchTab(ttk.Frame):
                         level = parts[1][:level_end]
                         message = '['.join(parts[1:])
                         
-                        # Log seviyesine göre renk belirle
+                        # Determine color based on log level
                         if "ERROR" in level:
                             level_color = "#ff5555"
                         elif "WARN" in level:
@@ -501,15 +501,15 @@ class SearchTab(ttk.Frame):
                         else:
                             level_color = "#50fa7b"
                         
-                        # Renkli olarak ekle
+                        # Add with color
                         self.text_widget.insert(tk.END, f"{timestamp} ", "timestamp")
                         self.text_widget.insert(tk.END, f"[{level}] ", f"level_{level_color}")
                         self.text_widget.insert(tk.END, f"{message}\n", "message")
                 else:
-                    # Trace log veya diğer satırlar
+                    # Trace log or other lines
                     self.text_widget.insert(tk.END, f"{line}\n", "message")
             
-            # Renklendirme tag'lerini ayarla
+            # Set coloring tags
             self.text_widget.tag_configure("timestamp", foreground="#8be9fd")
             self.text_widget.tag_configure("message", foreground="white")
             
@@ -517,7 +517,7 @@ class SearchTab(ttk.Frame):
                 self.text_widget.tag_configure(f"level_{color}", foreground=color)
                 
         except Exception as e:
-            print(f"Renklendirme hatası: {e}")
+            print(f"Coloring error: {e}")
             self.text_widget.configure(state='disabled')
 
     def show_search_dialog(self, event=None):
@@ -644,42 +644,42 @@ class LogSearcherGUI:
         self.root.state('zoomed')
         self.root.geometry("1200x800")
         
-        # Stil tanımlamaları
+        # Style definitions
         style = ttk.Style()
         
-        # Notebook (tab bar) stili
+        # Notebook (tab bar) style
         style.configure("Custom.TNotebook", 
-            background='#1a1a1a',  # Koyu arka plan
-            borderwidth=0,         # Kenarlık yok
+            background='#1a1a1a',  # Dark background
+            borderwidth=0,         # No border
             padding=0
         )
         
         style.configure("Custom.TNotebook.Tab",
-            padding=[10, 5],      # Yatay ve dikey padding
-            background='#2d2d2d', # Tab normal rengi
-            foreground='#808080', # Tab normal yazı rengi
+            padding=[10, 5],      # Horizontal and vertical padding
+            background='#2d2d2d', # Normal tab color
+            foreground='#808080', # Normal tab text color
             lightcolor='#2d2d2d',
-            borderwidth=0,        # Kenarlık yok
+            borderwidth=0,        # No border
         )
         
         style.map("Custom.TNotebook.Tab",
-            background=[("selected", '#363636')],  # Seçili tab rengi
-            foreground=[("selected", '#ffffff')],  # Seçili tab yazı rengi
-            expand=[("selected", [1, 1, 1, 0])]    # Seçili tab'i biraz büyüt
+            background=[("selected", '#363636')],  # Selected tab color
+            foreground=[("selected", '#ffffff')],  # Selected tab text color
+            expand=[("selected", [1, 1, 1, 0])]    # Slightly expand selected tab
         )
         
-        # Menü stili
+        # Menu style
         root.option_add('*Menu.background', '#2D2D2D')
         root.option_add('*Menu.foreground', '#FFFFFF')
         root.option_add('*Menu.activeBackground', '#404040')
         root.option_add('*Menu.activeForeground', '#FFFFFF')
         root.option_add('*Menu.selectColor', '#FFFFFF')
         
-        # Menü çubuğu oluştur
+        # Create menu bar
         self.menubar = tk.Menu(root)
         root.config(menu=self.menubar)
         
-        # File menüsü
+        # File menu
         file_menu = tk.Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label="File", menu=file_menu)
         file_menu.add_command(label="New Tab", command=self.add_tab, 
@@ -689,46 +689,46 @@ class LogSearcherGUI:
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.on_closing)
         
-        # Settings menüsü
+        # Settings menu
         settings_menu = tk.Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label="Settings", menu=settings_menu)
         settings_menu.add_command(label="Preferences", command=self.show_settings)
         
-        # Configden path'leri oku
+        # Read paths from config
         self.load_config()
         self.last_tab_number = 0
         
-        # Ana container
+        # Main container
         main_container = ttk.Frame(root)
         main_container.pack(fill="both", expand=True, padx=10, pady=5)
         
         # Notebook (tab container)
         self.notebook = ttk.Notebook(main_container, style="Custom.TNotebook")
-        self.notebook.pack(fill="both", expand=True, padx=0, pady=0)  # padding'i kaldır
+        self.notebook.pack(fill="both", expand=True, padx=0, pady=0)  # Remove padding
         
-        # Tab değişikliğini takip et
+        # Track tab changes
         self.notebook.bind('<<NotebookTabChanged>>', self.on_tab_changed)
         
-        # İlk tab'i ekle
+        # Add first tab
         self.add_tab()
         
-        # GUI kilitlemeyi önlemek için
+        # To prevent GUI locking
         self.root = root
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
-        # Filtreleme için debounce timer
+        # Debounce timer for filtering
         self.filter_timer = None
         
-        # Kısayol tuşlarını ekle
+        # Add keyboard shortcuts
         self.bind_shortcuts()
         
-        # Tab kapatma için alternatif kısayollar
-        self.root.bind('<Command-BackSpace>', lambda e: self.close_current_tab())  # macOS için
-        self.root.bind('<Control-BackSpace>', lambda e: self.close_current_tab())  # Windows/Linux için
+        # Alternative shortcuts for closing tab
+        self.root.bind('<Command-BackSpace>', lambda e: self.close_current_tab())  # For macOS
+        self.root.bind('<Control-BackSpace>', lambda e: self.close_current_tab())  # For Windows/Linux
         
-        # veya
-        self.root.bind('<Command-d>', lambda e: self.close_current_tab())  # macOS için
-        self.root.bind('<Control-d>', lambda e: self.close_current_tab())  # Windows/Linux için
+        # or
+        self.root.bind('<Command-d>', lambda e: self.close_current_tab())  # For macOS
+        self.root.bind('<Control-d>', lambda e: self.close_current_tab())  # For Windows/Linux
 
     def load_config(self):
         try:
@@ -736,13 +736,13 @@ class LogSearcherGUI:
                 config = json.load(f)
                 self.env_configs = config.get('env_configs', {})
                 
-                # Highlight ve sıralama ayarlarını yükle
+                # Highlight and sorting settings
                 highlight_settings = config.get("highlight_settings", {})
                 self.search_highlight_enabled = highlight_settings.get("search_highlight", True)
                 self.filter_highlight_enabled = highlight_settings.get("filter_highlight", True)
                 self.sort_by_time_enabled = highlight_settings.get("sort_by_time", True)
                 
-                # Kısayol ayarlarını yükle
+                # Load shortcut settings
                 shortcut_settings = config.get("shortcuts", {
                     "new_tab": {
                         "win": "<Control-t>",
@@ -756,7 +756,7 @@ class LogSearcherGUI:
                         "win": "<Control-d>",
                         "mac": "<Command-d>"
                     },
-                    "stop_search": {  # Yeni eklenen shortcut
+                    "stop_search": {  # Newly added shortcut
                         "win": "<Control-Shift-C>",
                         "mac": "<Command-Shift-C>"
                     }
@@ -764,13 +764,13 @@ class LogSearcherGUI:
                 self.shortcuts = shortcut_settings
                 
         except FileNotFoundError:
-            # Varsayılan config
+            # Default config
             self.env_configs = {
                 "QA": {"paths": [], "profiles": {}},
                 "SB": {"paths": [], "profiles": {}},
                 "PROD": {"paths": [], "profiles": {}}
             }
-            # Varsayılan kısayollar
+            # Default shortcuts
             self.shortcuts = {
                 "new_tab": {
                     "win": "<Control-t>",
@@ -784,7 +784,7 @@ class LogSearcherGUI:
                     "win": "<Control-d>",
                     "mac": "<Command-d>"
                 },
-                "stop_search": {  # Yeni eklenen shortcut
+                "stop_search": {  # Newly added shortcut
                     "win": "<Control-Shift-C>",
                     "mac": "<Command-Shift-C>"
                 }
@@ -799,21 +799,21 @@ class LogSearcherGUI:
             json.dump(config, f, indent=4)
     
     def get_time_range(self):
-        """Girilen zamanı parse et ve uygun formata çevir"""
+        """Parse entered time and convert to appropriate format"""
         time_input = self.time_var.get().strip()
         
         try:
-            # Eğer sadece sayı girilmişse saat olarak kabul et
+            # If only number entered, treat as hours
             if time_input.isdigit():
                 return f"{time_input}h ago"
             
-            # Tarih formatını kontrol et (YYYY-MM-DD HH:mm:ss)
+            # Check date format (YYYY-MM-DD HH:mm:ss)
             datetime.datetime.strptime(time_input, "%Y-%m-%d %H:%M:%S")
-            return time_input  # Tarih formatı doğruysa aynen döndür
+            return time_input  # Return if date format is correct
             
         except ValueError as e:
-            print(f"Zaman format hatası: {e}")  # Konsola yazdır
-            return "1h ago"  # Hatalı format durumunda varsayılan değer
+            print(f"Time format error: {e}")  # Print to console
+            return "1h ago"  # Default value if format is incorrect
     
     def get_filter_pattern(self):
         search_value = self.search_var.get()
@@ -832,10 +832,10 @@ class LogSearcherGUI:
         self.stop_button.configure(state="normal" if searching else "disabled")
 
     def on_closing(self):
-        """Uygulama kapatılırken thread'leri temizle"""
+        """Clean up threads when app is closed"""
         current_tab = self.get_current_tab()
         if current_tab:
-            current_tab.stop_search()  # Tab'in kendi stop metodunu çağır
+            current_tab.stop_search()  # Call tab's own stop method
         self.root.destroy()
 
     def stop_search(self):
@@ -843,17 +843,17 @@ class LogSearcherGUI:
         if not current_tab:
             return
             
-        # Aramayı durdur
+        # Stop search
         current_tab.is_searching = False
-        current_tab.status_var.set("Arama durduruluyor...")
+        current_tab.status_var.set("Stopping search...")
         
-        # Thread'leri bekle
+        # Wait for threads
         for thread in current_tab.active_threads:
             if thread.is_alive():
                 thread.join(timeout=0.1)
         current_tab.active_threads.clear()
         
-        # Queue'yu temizle
+        # Clear queue
         while not current_tab.log_queue.empty():
             try:
                 current_tab.log_queue.get_nowait()
@@ -863,22 +863,22 @@ class LogSearcherGUI:
         if self.sort_by_time_enabled and current_tab.text_widget.get("1.0", tk.END).strip():
             self.sort_logs_by_time()
         
-        current_tab.status_var.set("Arama durduruldu!")
+        current_tab.status_var.set("Search stopped!")
         current_tab.progress_bar.stop()
-        current_tab.toggle_buttons(searching=False)  # Tab'in kendi butonlarını güncelle
+        current_tab.toggle_buttons(searching=False)  # Update tab's own button states
 
     def get_current_paths_and_profiles(self):
-        """Seçili ortama göre path ve profilleri döndür"""
+        """Return paths and profiles for selected environment"""
         current_tab = self.get_current_tab()
         if not current_tab:
             return []
         
-        env = current_tab.env_var.get()  # Tab'in kendi env_var'ını kullan
+        env = current_tab.env_var.get()  # Use tab's own env_var
         config = self.env_configs.get(env, {"paths": [], "profiles": {}})
         
         paths_with_profiles = []
         for path in config["paths"]:
-            # Path'in hangi profile'a ait olduğunu belirle
+            # Determine which profile the path belongs to
             profile = config["profiles"]["steller"] if "steller" in path else config["profiles"]["bahama"]
             paths_with_profiles.append((path, profile))
         
@@ -944,10 +944,10 @@ class LogSearcherGUI:
                                 "message": current_log
                             })
                         
-                        # Yeni log başlat
+                        # Start new log
                         current_log = line.strip()
                         try:
-                            # Zaman parse et
+                            # Parse time
                             parts = line.strip().split()
                             for i in range(len(parts)-1):
                                 try:
@@ -958,21 +958,21 @@ class LogSearcherGUI:
                                 except ValueError:
                                     continue
                         except Exception as e:
-                            print(f"[{path}] Zaman parse hatası: {e}")
+                            print(f"[{path}] Time parse error: {e}")
                             current_timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
                         
-                        # Log seviyesini belirle
+                        # Determine log level
                         current_level = "INFO"
                         if "ERROR" in line.upper():
                             current_level = "ERROR"
                         elif "WARN" in line.upper():
                             current_level = "WARN"
                     else:
-                        # Eğer mevcut log varsa, trace logunu ekle
+                        # If existing log, add trace log
                         if current_log:
                             current_log += "\n" + line.strip()
             
-            # Son logu gönder
+            # Send last log
             if current_log:
                 print(f"[{path}] Sending last log to queue: {current_log[:200]}...")
                 tab.log_queue.put({
@@ -997,32 +997,32 @@ class LogSearcherGUI:
                 pass
 
     def debounce_filter(self, tab):
-        """Filtreleme için debounce uygula"""
+        """Apply debounce for filtering"""
         if hasattr(tab, 'filter_timer') and tab.filter_timer:
             self.root.after_cancel(tab.filter_timer)
         tab.filter_timer = self.root.after(300, lambda: self.filter_logs(tab))
 
     def is_valid_filter_text(self, text):
-        """Filtreleme metninin geçerli olup olmadığını kontrol et"""
+        """Check if filter text is valid"""
         if not text:
             return False
             
-        # Minimum uzunluk kontrolü
+        # Minimum length check
         if len(text) < 2:
             return False
             
-        # Sadece özel karakterlerden oluşuyorsa geçersiz
+        # Invalid if only special characters
         special_chars = '"\'?!,.:;-_=+<>[]{}()|\\/@#$%^&*'
         special_char_count = sum(1 for c in text if c in special_chars)
         if special_char_count == len(text):
             return False
             
-        # Ardışık özel karakter kontrolü
+        # Consecutive special character check
         consecutive_special = 0
         for c in text:
             if c in special_chars:
                 consecutive_special += 1
-                if consecutive_special > 2:  # En fazla 2 ardışık özel karakter
+                if consecutive_special > 2:  # Max 2 consecutive special characters
                     return False
             else:
                 consecutive_special = 0
@@ -1030,20 +1030,20 @@ class LogSearcherGUI:
         return True
 
     def filter_logs(self, tab):
-        """Logları filtrele"""
+        """Filter logs"""
         try:
             filter_text = tab.filter_var.get().lower()
             
-            # Text widget'ı güncelle
+            # Update text widget
             tab.text_widget.configure(state='normal')
             tab.text_widget.delete(1.0, tk.END)
             
-            # Eğer içerik boşsa
+            # If content is empty
             if not tab.full_log_content.strip():
                 tab.text_widget.configure(state='disabled')
                 return
             
-            # Eğer filtre boşsa, tüm logları göster
+            # If filter is empty, show all logs
             if not filter_text:
                 tab.text_widget.insert(tk.END, tab.full_log_content)
                 self.reapply_colors(tab)
@@ -1053,7 +1053,7 @@ class LogSearcherGUI:
                 tab.text_widget.configure(state='disabled')
                 return
             
-            # Filtre metni geçerli değilse, orijinal logları göster
+            # If filter text is invalid, show original logs
             if not self.is_valid_filter_text(filter_text):
                 tab.text_widget.insert(tk.END, tab.full_log_content)
                 self.reapply_colors(tab)
@@ -1063,12 +1063,12 @@ class LogSearcherGUI:
                 tab.text_widget.configure(state='disabled')
                 return
             
-            # Logları satırlara böl ve grupla
+            # Split logs into lines and group them
             logs = []
             current_log = []
             
             for line in tab.full_log_content.split('\n'):
-                # Eğer bu yeni bir log başlangıcıysa (timestamp ile başlıyorsa)
+                # If this is a new log start (starts with timestamp)
                 if line.strip() and len(line.split()) >= 2 and line.split()[1].count(':') == 2:
                     if current_log:
                         logs.append('\n'.join(current_log))
@@ -1076,17 +1076,17 @@ class LogSearcherGUI:
                 elif line.strip():
                     current_log.append(line)
             
-            # Son logu ekle
+            # Add last log
             if current_log:
                 logs.append('\n'.join(current_log))
             
-            # Her log grubunu filtrele
+            # Filter each log group
             for log in logs:
                 if filter_text in log.lower():
                     lines = log.split('\n')
                     first_line = lines[0]
                     
-                    # İlk satırı parçala
+                    # Parse first line
                     parts = first_line.split(' [')
                     if len(parts) >= 2:
                         timestamp = parts[0]
@@ -1095,7 +1095,7 @@ class LogSearcherGUI:
                             level = parts[1][:level_end]
                             message = '['.join(parts[1:])
                             
-                            # Log seviyesine göre renk belirle
+                            # Determine color based on log level
                             if "ERROR" in level:
                                 level_color = "#ff5555"
                             elif "WARN" in level:
@@ -1103,27 +1103,27 @@ class LogSearcherGUI:
                             else:
                                 level_color = "#50fa7b"
                             
-                            # Renkli olarak ekle
+                            # Add with color
                             current_pos = tab.text_widget.index("end-1c")
                             tab.text_widget.insert(tk.END, f"{timestamp} ", "timestamp")
                             tab.text_widget.insert(tk.END, f"[{level}] ", f"level_{level_color}")
                             tab.text_widget.insert(tk.END, f"{message}\n", "message")
                             
-                            # Trace loglarını ekle
+                            # Add trace logs
                             for line in lines[1:]:
                                 tab.text_widget.insert(tk.END, f"{line}\n", "message")
                             
                             tab.text_widget.insert(tk.END, "\n")
                             
-                            # Renklendirme
+                            # Reapply coloring
                             tab.text_widget.tag_configure("timestamp", foreground="#8be9fd")
                             tab.text_widget.tag_configure(f"level_{level_color}", foreground=level_color)
                             tab.text_widget.tag_configure("message", foreground="white")
                             
-                            # Filtrelenen metni highlight et
-                            self.highlight_text(tab, current_pos, "end", filter_text, "filter_highlight")
+                            # Highlight filtered text
+                            self.highlight_text(current_pos, "end", filter_text, "filter_highlight")
             
-            # Arama terimini highlight et
+            # Highlight search term
             search_term = tab.search_var.get()
             if search_term:
                 self.highlight_text(tab, "1.0", "end", search_term, "search_highlight")
@@ -1131,21 +1131,21 @@ class LogSearcherGUI:
             tab.text_widget.configure(state='disabled')
                         
         except Exception as e:
-            print(f"Filtreleme hatası: {e}")
+            print(f"Filtering error: {e}")
             tab.text_widget.configure(state='disabled')
 
     def highlight_text(self, tab, start, end, text, tag):
-        """Verilen metni highlight et"""
+        """Highlight given text"""
         if not text:
             return
             
-        # Highlight ayarlarını kontrol et
+        # Check highlight settings
         if tag == "search_highlight" and not self.search_highlight_enabled:
             return
         if tag == "filter_highlight" and not self.filter_highlight_enabled:
             return
             
-        # Arama için kırmızı, filtreleme için sarı highlight
+        # Red for search, yellow for filter highlight
         if tag == "search_highlight":
             tab.text_widget.tag_configure(tag, background="#aa0000", foreground="#ffffff")
         else:
@@ -1162,7 +1162,7 @@ class LogSearcherGUI:
 
     def update_gui(self, tab):
         try:
-            # Sadece tab'in geçerli olup olmadığını kontrol et
+            # Check if tab is valid
             if not tab in self.notebook.winfo_children():
                 return
             
@@ -1180,7 +1180,7 @@ class LogSearcherGUI:
                         
                         tab.text_widget.configure(state='normal')
                         
-                        # Log girişini ekle
+                        # Add log entry
                         if tab.text_widget.get("1.0", "end").strip():
                             tab.text_widget.insert("end", "─" * 100 + "\n", "separator")
                             tab.text_widget.tag_configure("separator", foreground="#6272a4")
@@ -1197,7 +1197,7 @@ class LogSearcherGUI:
                         tab.text_widget.insert("end", f"[{level}] ", f"level_{level_color}")
                         tab.text_widget.insert("end", f"{log_entry['message']}\n\n", "message")
                         
-                        # Renklendirme
+                        # Reapply coloring
                         tab.text_widget.tag_configure("timestamp", foreground="#8be9fd")
                         tab.text_widget.tag_configure(f"level_{level_color}", foreground=level_color)
                         tab.text_widget.tag_configure("message", foreground="white")
@@ -1207,7 +1207,7 @@ class LogSearcherGUI:
                         
                         tab.text_widget.configure(state='disabled')
                         
-                        # Orijinal log içeriğini güncelle
+                        # Update original log content
                         tab.full_log_content = tab.text_widget.get(1.0, tk.END)
                         
                         has_new_logs = True
@@ -1226,21 +1226,21 @@ class LogSearcherGUI:
                 import traceback
                 traceback.print_exc()
             
-            # Thread durumunu kontrol et
+            # Check active threads
             active_threads = [t for t in tab.active_threads if t.is_alive()]
             
             if not active_threads and tab.log_queue.empty():
                 print(f"[Tab {self.notebook.index(tab)}] Search completed")
                 tab.is_searching = False
                 tab.search_completed = True
-                tab.status_var.set("Arama tamamlandı!")
+                tab.status_var.set("Search completed!")
                 tab.progress_bar.stop()
                 tab.toggle_buttons(searching=False)
                 
                 if self.sort_by_time_enabled:
                     self.sort_logs_by_time()
             else:
-                # Sadece tab'in geçerli olup olmadığını kontrol et
+                # Check if tab is valid
                 if tab in self.notebook.winfo_children():
                     self.root.after(50, self.update_gui, tab)
                 
@@ -1254,61 +1254,61 @@ class LogSearcherGUI:
         if not current_tab:
             return
             
-        # Tüm tab'lerdeki aramaları durdur
+        # Stop searches in all tabs
         for tab_id in self.notebook.tabs():
             tab = self.notebook.nametowidget(tab_id)
             tab.is_searching = False
             
-            # Tab'in thread'lerini bekle
+            # Wait for tab's threads
             for thread in tab.active_threads:
                 if thread.is_alive():
                     thread.join(timeout=0.1)
             tab.active_threads.clear()
             
-            # Queue'yu temizle
+            # Clear queue
             while not tab.log_queue.empty():
                 try:
                     tab.log_queue.get_nowait()
                 except queue.Empty:
                     break
         
-        # Aktif tab'i temizle
-        self.clear_tab(current_tab)
-        
-        filter_pattern = self.get_filter_pattern()
-        if not filter_pattern:
-            current_tab.status_var.set("Lütfen arama değeri girin")
-            return
-        
-        # Arama durumlarını sıfırla
-        current_tab.is_searching = True
-        current_tab.search_completed = False
-        
-        self.toggle_buttons(searching=True)
-        current_tab.progress_bar.start()
-        
-        # Her path için ayrı thread başlat
-        paths_and_profiles = self.get_current_paths_and_profiles()
-        for path, profile in paths_and_profiles:
-            thread = threading.Thread(
-                target=self.search_logs,
-                args=(path, profile, filter_pattern, current_tab),
-                daemon=True
-            )
-            thread.start()
-            current_tab.active_threads.append(thread)
-        
-        # GUI güncellemesini başlat
-        self.update_gui(current_tab)
+            # Clear tab
+            self.clear_tab(tab)
+            
+            filter_pattern = self.get_filter_pattern()
+            if not filter_pattern:
+                current_tab.status_var.set("Please enter a search value")
+                return
+            
+            # Reset search states
+            current_tab.is_searching = True
+            current_tab.search_completed = False
+            
+            self.toggle_buttons(searching=True)
+            current_tab.progress_bar.start()
+            
+            # Start separate threads for each path
+            paths_and_profiles = self.get_current_paths_and_profiles()
+            for path, profile in paths_and_profiles:
+                thread = threading.Thread(
+                    target=self.search_logs,
+                    args=(path, profile, filter_pattern, current_tab),
+                    daemon=True
+                )
+                thread.start()
+                current_tab.active_threads.append(thread)
+            
+            # Start GUI updates
+            self.update_gui(current_tab)
 
     def export_results(self):
-        """Aktif tab'in içeriğini dışa aktar"""
+        """Export active tab's content"""
         current_tab = self.get_current_tab()
         if not current_tab:
             return
             
         if not current_tab.text_widget.get(1.0, "end").strip():
-            messagebox.showwarning("Uyarı", "Dışa aktarılacak sonuç bulunamadı!")
+            messagebox.showwarning("Warning", "No results to export!")
             return
             
         file_path = filedialog.asksaveasfilename(
@@ -1320,31 +1320,31 @@ class LogSearcherGUI:
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(current_tab.text_widget.get(1.0, "end"))
             
-            messagebox.showinfo("Başarılı", "Sonuçlar başarıyla dışa aktarıldı!")
+            messagebox.showinfo("Success", "Results exported successfully!")
 
     def clear_results(self):
-        """Aktif tab'in içeriğini temizle"""
+        """Clear active tab's content"""
         current_tab = self.get_current_tab()
         if not current_tab:
             return
             
-        # Queue'yu temizle
+        # Clear queue
         while not current_tab.log_queue.empty():
             try:
                 current_tab.log_queue.get_nowait()
             except queue.Empty:
                 break
         
-        # Tab'i tamamen temizle
+        # Clear tab completely
         self.clear_tab(current_tab)
 
     def show_settings(self):
         settings_window = tk.Toplevel(self.root)
-        settings_window.title("Ayarlar")
-        settings_window.geometry("1000x800")  # Daha büyük pencere
+        settings_window.title("Settings")
+        settings_window.geometry("1000x800")  # Larger window
         
-        # Highlight ayarları için frame
-        highlight_frame = ttk.LabelFrame(settings_window, text="Görünüm Ayarları")
+        # Highlight settings frame
+        highlight_frame = ttk.LabelFrame(settings_window, text="Display Settings")
         highlight_frame.pack(fill="x", padx=5, pady=5)
         
         # Search highlight checkbox
@@ -1357,14 +1357,14 @@ class LogSearcherGUI:
         
         # Sort by time checkbox
         self.sort_by_time_var = tk.BooleanVar(value=self.sort_by_time_enabled)
-        ttk.Checkbutton(highlight_frame, text="Tarama Bitiminde Zamana Göre Sırala", 
+        ttk.Checkbutton(highlight_frame, text="Sort logs by time at search completion", 
                        variable=self.sort_by_time_var).pack(padx=5, pady=2)
         
-        # Notebook (tab) widget'ı oluştur
+        # Create notebook (tab) widget
         notebook = ttk.Notebook(settings_window)
         notebook.pack(fill="both", expand=True, padx=5, pady=5)
         
-        # Her ortam için ayrı tab oluştur
+        # Create separate tab for each environment
         tabs = {}
         for env in ["QA", "SB", "PROD"]:
             tab = ttk.Frame(notebook)
@@ -1391,7 +1391,7 @@ class LogSearcherGUI:
             bahama_profile.pack(side="left", padx=5, fill="x", expand=True)
             bahama_profile.insert(0, self.env_configs[env]["profiles"]["bahama"])
             
-            # Path listesi frame
+            # Path list frame
             path_frame = ttk.LabelFrame(tab, text="Log Paths")
             path_frame.pack(fill="both", expand=True, padx=5, pady=5)
             
@@ -1411,7 +1411,7 @@ class LogSearcherGUI:
             # Bahama path'lerini yükle
             bahama_paths.insert("1.0", "\n".join([p for p in self.env_configs[env]["paths"] if "bahama" in p]))
             
-            # Her tab için widget'ları sakla
+            # Store widgets for each tab
             tabs[env] = {
                 "steller_profile": steller_profile,
                 "bahama_profile": bahama_profile,
@@ -1419,16 +1419,16 @@ class LogSearcherGUI:
                 "bahama_paths": bahama_paths
             }
         
-        # Kısayol ayarları için frame
-        shortcut_frame = ttk.LabelFrame(settings_window, text="Kısayol Ayarları")
+        # Shortcut settings frame
+        shortcut_frame = ttk.LabelFrame(settings_window, text="Shortcut Settings")
         shortcut_frame.pack(fill="x", padx=5, pady=5)
         
-        # Platform seçimi (macOS varsayılan)
+        # Platform selection (macOS default)
         platform_frame = ttk.Frame(shortcut_frame)
         platform_frame.pack(fill="x", padx=5, pady=5)
         
         ttk.Label(platform_frame, text="Platform:").pack(side="left")
-        # Sistem tipini kontrol et ve varsayılan değeri belirle
+        # Check system type and set default value
         is_mac = sys.platform == "darwin"
         platform_var = tk.StringVar(value="mac" if is_mac else "win")
         
@@ -1437,7 +1437,7 @@ class LogSearcherGUI:
         ttk.Radiobutton(platform_frame, text="macOS", 
             variable=platform_var, value="mac").pack(side="left", padx=5)
         
-        # Kısayol düzenleme alanları
+        # Shortcut editing areas
         shortcuts_frame = ttk.Frame(shortcut_frame)
         shortcuts_frame.pack(fill="x", padx=5, pady=5)
         
@@ -1453,7 +1453,7 @@ class LogSearcherGUI:
             row += 1
         
         def update_shortcut_entries(*args):
-            """Platform değiştiğinde kısayolları güncelle"""
+            """Update shortcuts when platform changes"""
             platform = platform_var.get()
             for action, entry in shortcut_entries.items():
                 entry.delete(0, tk.END)
@@ -1463,14 +1463,14 @@ class LogSearcherGUI:
         
         def save_settings():
             try:
-                # Highlight ve sıralama ayarlarını kaydet
+                # Highlight and sorting settings
                 self.env_configs["highlight_settings"] = {
                     "search_highlight": self.search_highlight_var.get(),
                     "filter_highlight": self.filter_highlight_var.get(),
                     "sort_by_time": self.sort_by_time_var.get()
                 }
                 
-                # Her ortam için ayarları kaydet
+                # Save settings for each environment
                 for env in ["QA", "SB", "PROD"]:
                     # Profile'ları kaydet
                     self.env_configs[env]["profiles"] = {
@@ -1484,41 +1484,41 @@ class LogSearcherGUI:
                     
                     self.env_configs[env]["paths"] = steller_paths + bahama_paths
                 
-                # Kısayol ayarlarını kaydet
+                # Shortcut settings
                 platform = platform_var.get()
                 for action, entry in shortcut_entries.items():
                     self.shortcuts[action][platform] = entry.get()
                 
-                # Kısayolları yeniden bağla
+                # Rebind shortcuts
                 self.bind_shortcuts()
                 
                 self.save_config()
                 settings_window.destroy()
-                messagebox.showinfo("Başarılı", "Ayarlar kaydedildi!")
+                messagebox.showinfo("Success", "Settings saved!")
                 
             except Exception as e:
-                messagebox.showerror("Hata", f"Ayarlar kaydedilirken hata oluştu: {str(e)}")
+                messagebox.showerror("Error", f"Error saving settings: {str(e)}")
         
-        ttk.Button(settings_window, text="Kaydet", command=save_settings).pack(pady=10)
+        ttk.Button(settings_window, text="Save", command=save_settings).pack(pady=10)
 
     def sort_logs_by_time(self):
-        """Logları zamana göre sırala"""
+        """Sort logs by time"""
         current_tab = self.get_current_tab()
         if not current_tab:
             return
             
         try:
-            # Text widget'tan tüm logları al
+            # Get all logs from text widget
             current_tab.text_widget.configure(state='normal')
             content = current_tab.text_widget.get(1.0, tk.END)
             
-            # Logları satırlara böl
+            # Split logs into lines
             logs = []
             current_log = []
             
-            # Her satırı kontrol et
+            # Check each line
             for line in content.split('\n'):
-                # Eğer bu yeni bir log başlangıcıysa (timestamp ile başlıyorsa)
+                # If this is a new log start (starts with timestamp)
                 if line.strip() and len(line.split()) >= 2 and line.split()[1].count(':') == 2:
                     if current_log:
                         logs.append('\n'.join(current_log))
@@ -1526,11 +1526,11 @@ class LogSearcherGUI:
                 elif line.strip():
                     current_log.append(line)
             
-            # Son logu ekle
+            # Add last log
             if current_log:
                 logs.append('\n'.join(current_log))
             
-            # Her logu parse et ve timestamp ile birlikte sakla
+            # Parse each log and store with timestamp
             parsed_logs = []
             for log in logs:
                 if not log.strip():
@@ -1539,7 +1539,7 @@ class LogSearcherGUI:
                     lines = log.split('\n')
                     first_line = lines[0]
                     
-                    # İlk satırdan timestamp'i al
+                    # Parse first line for timestamp
                     parts = first_line.split()
                     timestamp_str = parts[0] + ' ' + parts[1]
                     timestamp = datetime.datetime.strptime(timestamp_str.split('.')[0], "%Y-%m-%d %H:%M:%S")
@@ -1548,24 +1548,24 @@ class LogSearcherGUI:
                 except (IndexError, ValueError):
                     continue
             
-            # Zamana göre sırala
+            # Sort by timestamp
             parsed_logs.sort(key=lambda x: x[0])
             
-            # Text widget'ı temizle
+            # Clear text widget
             current_tab.text_widget.delete(1.0, tk.END)
             
-            # Sıralanmış logları ekle
+            # Add sorted logs
             for i, (_, log) in enumerate(parsed_logs):
-                # Separator ekle (ilk log hariç)
+                # Add separator (except first log)
                 if i > 0:
                     current_tab.text_widget.insert(tk.END, "─" * 100 + "\n", "separator")
                     current_tab.text_widget.tag_configure("separator", foreground="#6272a4")
                 
-                # Log satırlarını ekle
+                # Add log lines
                 lines = log.split('\n')
                 first_line = lines[0]
                 
-                # İlk satırı parçala
+                # Parse first line
                 parts = first_line.split(' [')
                 if len(parts) >= 2:
                     timestamp = parts[0]
@@ -1574,7 +1574,7 @@ class LogSearcherGUI:
                         level = parts[1][:level_end]
                         message = '['.join(parts[1:])
                         
-                        # Log seviyesine göre renk belirle
+                        # Set color based on log level
                         if "ERROR" in level:
                             level_color = "#ff5555"
                         elif "WARN" in level:
@@ -1582,41 +1582,37 @@ class LogSearcherGUI:
                         else:
                             level_color = "#50fa7b"
                         
-                        # Renkli olarak ekle
+                        # Add with color
                         current_pos = current_tab.text_widget.index("end-1c")
                         current_tab.text_widget.insert(tk.END, f"{timestamp} ", "timestamp")
                         current_tab.text_widget.insert(tk.END, f"[{level}] ", f"level_{level_color}")
                         current_tab.text_widget.insert(tk.END, f"{message}\n", "message")
                 
-                # Trace loglarını ekle
+                # Add trace logs
                 for line in lines[1:]:
                     current_tab.text_widget.insert(tk.END, line + "\n", "message")
                 
                 current_tab.text_widget.insert(tk.END, "\n")
             
-            # Renklendirme tag'lerini ayarla
+            # Set coloring tags
             current_tab.text_widget.tag_configure("timestamp", foreground="#8be9fd")
             current_tab.text_widget.tag_configure("message", foreground="white")
             
             for color in ["#ff5555", "#ffb86c", "#50fa7b"]:
                 current_tab.text_widget.tag_configure(f"level_{color}", foreground=color)
             
-            # Highlight'ları tekrar uygula
+            # Reapply highlights
             search_term = current_tab.search_var.get()
             if search_term:
                 self.highlight_text(current_tab, "1.0", "end", search_term, "search_highlight")
-            
-            filter_text = current_tab.filter_var.get()
-            if filter_text:
-                self.highlight_text(current_tab, "1.0", "end", filter_text, "filter_highlight")
                 
         except Exception as e:
-            print(f"Log sıralama hatası: {e}")
+            print(f"Log sorting error: {e}")
         finally:
             current_tab.text_widget.configure(state='disabled')
 
     def reapply_colors(self, tab):
-        """Tüm loglar için renklendirmeleri tekrar uygula"""
+        """Reapply coloring to all logs"""
         try:
             content = tab.text_widget.get("1.0", tk.END)
             lines = content.split('\n')
@@ -1628,7 +1624,7 @@ class LogSearcherGUI:
                     tab.text_widget.insert(tk.END, "\n")
                     continue
                     
-                # Log satırı mı kontrol et
+                # Check if it's a log line
                 parts = line.split(' [')
                 if len(parts) >= 2:
                     timestamp = parts[0]
@@ -1637,7 +1633,7 @@ class LogSearcherGUI:
                         level = parts[1][:level_end]
                         message = '['.join(parts[1:])
                         
-                        # Log seviyesine göre renk belirle
+                        # Determine color based on log level
                         if "ERROR" in level:
                             level_color = "#ff5555"
                         elif "WARN" in level:
@@ -1645,15 +1641,15 @@ class LogSearcherGUI:
                         else:
                             level_color = "#50fa7b"
                         
-                        # Renkli olarak ekle
+                        # Add with color
                         tab.text_widget.insert(tk.END, f"{timestamp} ", "timestamp")
                         tab.text_widget.insert(tk.END, f"[{level}] ", f"level_{level_color}")
                         tab.text_widget.insert(tk.END, f"{message}\n", "message")
                 else:
-                    # Trace log veya diğer satırlar
+                    # Trace log or other lines
                     tab.text_widget.insert(tk.END, f"{line}\n", "message")
             
-            # Renklendirme tag'lerini ayarla
+            # Set coloring tags
             tab.text_widget.tag_configure("timestamp", foreground="#8be9fd")
             tab.text_widget.tag_configure("message", foreground="white")
             
@@ -1661,99 +1657,99 @@ class LogSearcherGUI:
                 tab.text_widget.tag_configure(f"level_{color}", foreground=color)
                 
         except Exception as e:
-            print(f"Renklendirme hatası: {e}")
+            print(f"Coloring error: {e}")
             tab.text_widget.configure(state='disabled')
 
     def add_tab(self):
-        """Yeni bir arama tab'i ekle"""
-        # Sayacı artır
+        """Add a new search tab"""
+        # Increment counter
         self.last_tab_number += 1
         
-        # Yeni tab'i ekle
+        # Add new tab
         new_tab = SearchTab(self.notebook, self)
-        self.notebook.add(new_tab, text=f"Arama {self.last_tab_number}")
+        self.notebook.add(new_tab, text=f"Search {self.last_tab_number}")
         self.notebook.select(new_tab)
         
-        # Kapat butonunun durumunu güncelle
+        # Update Close Tab menu state
         self.update_close_button_state()
         
         return new_tab
 
     def close_current_tab(self):
-        """Aktif tab'i kapat"""
+        """Close active tab"""
         current = self.notebook.select()
-        if current and self.notebook.index('end') > 1:  # En az bir tab kalsın
-            # Tab'i kapatmadan önce içeriğini temizle
+        if current and self.notebook.index('end') > 1:  # At least one tab should remain
+            # Clear tab content before closing
             current_tab = self.notebook.nametowidget(current)
             self.clear_tab(current_tab)
             
-            # Aktif thread'leri durdur
+            # Wait for active threads
             if hasattr(current_tab, 'active_threads'):
                 for thread in current_tab.active_threads:
                     if thread.is_alive():
                         thread.join(timeout=0.1)
             
-            # Tab'i kapat
+            # Close tab
             self.notebook.forget(current)
             
-            # Eğer hiç tab kalmadıysa yeni bir tane ekle
+            # If no tabs left, add a new one
             if self.notebook.index('end') == 0:
                 self.add_tab()
             
-            # Kapat butonunun durumunu güncelle
+            # Update Close Tab menu state
             self.update_close_button_state()
 
     def get_current_tab(self):
-        """Aktif tab'i döndür"""
+        """Return active tab"""
         current = self.notebook.select()
         if current:
             return self.notebook.nametowidget(current)
         return None
 
     def clear_tab(self, tab):
-        """Tab'i tamamen temizle"""
-        # Text widget'ı temizle
+        """Clear tab completely"""
+        # Clear text widget
         tab.text_widget.configure(state='normal')
         tab.text_widget.delete(1.0, "end")
         tab.text_widget.configure(state='disabled')
         
-        # Status ve progress bar'ı sıfırla
+        # Reset status and progress bar
         tab.status_var.set("")
         tab.progress_bar.stop()
         
-        # Filtreleme timer'ı temizle
+        # Clear filtering timer
         if hasattr(tab, 'filter_timer'):
             if tab.filter_timer:
                 self.root.after_cancel(tab.filter_timer)
             delattr(tab, 'filter_timer')
         
-        # Filtreleme alanını temizle
+        # Clear filtering area
         tab.filter_var.set("")
         
-        # Log içeriğini sıfırla
+        # Reset log content
         tab.full_log_content = ""
         
-        # Tag'leri temizle
+        # Clear tags
         for tag in tab.text_widget.tag_names():
             tab.text_widget.tag_delete(tag)
         
-        # Arama durumlarını sıfırla
+        # Reset search states
         tab.is_searching = False
         tab.search_completed = False
 
     def on_tab_changed(self, event):
-        """Tab değiştiğinde çağrılır"""
+        """Tab changed event"""
         current_tab = self.get_current_tab()
         if current_tab and current_tab.is_searching:
-            # Yeni tab için GUI güncellemesini başlat
+            # Start GUI updates for new tab
             self.update_gui(current_tab)
 
     def update_close_button_state(self):
-        """Tab sayısına göre Close Tab menü öğesinin durumunu güncelle"""
-        # File menüsünü bul
+        """Update Close Tab menu state based on tab count"""
+        # Find File menu
         menu = self.root.nametowidget(self.menubar.entrycget(0, "menu"))
         
-        # Close Tab menü öğesinin indeksini bul (New Tab'den sonra)
+        # Find Close Tab menu item index (after New Tab)
         close_tab_index = 1
         
         if self.notebook.index('end') <= 1:
@@ -1762,16 +1758,16 @@ class LogSearcherGUI:
             menu.entryconfigure(close_tab_index, state="normal")
 
     def bind_shortcuts(self):
-        """Kısayolları bağla"""
-        # Sistem tipini belirle
+        """Bind shortcuts"""
+        # Determine system type
         is_mac = sys.platform == "darwin"
         platform_key = "mac" if is_mac else "win"
         
-        # Yeni tab kısayolu
+        # New tab shortcut
         new_tab_shortcut = self.shortcuts["new_tab"][platform_key]
         self.root.bind(new_tab_shortcut, lambda e: self.add_tab())
         
-        # Tab kapatma kısayolu
+        # Tab close shortcut
         close_tab_shortcut = self.shortcuts["close_tab"][platform_key]
         self.root.bind(close_tab_shortcut, lambda e: self.close_current_tab())
 
