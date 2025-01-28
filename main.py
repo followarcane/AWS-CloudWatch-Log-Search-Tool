@@ -158,29 +158,38 @@ class SearchTab(ttk.Frame):
         # Apply filtering when path changes
         self.path_filter_var.trace_add("write", lambda *args: self.apply_path_filter())
         
+        # Text widget and scrollbar frame
+        text_scroll_frame = ttk.Frame(self)
+        text_scroll_frame.pack(side="top", fill="both", expand=True)
+
         # Text widget
-        self.text_widget = tk.Text(self, wrap=tk.WORD, 
+        self.text_widget = tk.Text(text_scroll_frame, wrap=tk.WORD, 
             bg='black',
             fg='white',
             insertbackground='white'
         )
-        self.text_widget.pack(fill="both", expand=True)
-        
+        self.text_widget.pack(side="left", fill="both", expand=True)
+
         # Create tag for quick search
         self.text_widget.tag_configure("quick_search", background="yellow", foreground="black")
         
         # Scrollbar
-        scrollbar = ttk.Scrollbar(self, command=self.text_widget.yview)
+        scrollbar = ttk.Scrollbar(text_scroll_frame, command=self.text_widget.yview)
+
         scrollbar.pack(side="right", fill="y")
         self.text_widget.configure(yscrollcommand=scrollbar.set)
         
         # Make text widget read-only
         self.text_widget.configure(state='disabled')
         
+        # Status bar and progress bar
+        status_frame = ttk.Frame(self)
+        status_frame.pack(side="bottom", fill="x")
+
         # Status bar
-        self.progress_bar = ttk.Progressbar(self, mode='indeterminate')
+        self.progress_bar = ttk.Progressbar(status_frame, mode='indeterminate')
         self.progress_bar.pack(fill="x", padx=5, pady=2)
-        ttk.Label(self, textvariable=self.status_var).pack(fill="x", padx=5)
+        ttk.Label(status_frame, textvariable=self.status_var).pack(fill="x", padx=5)
 
         # Style definitions
         style = ttk.Style()
