@@ -12,6 +12,7 @@ import re
 import os
 import sys
 from log_searcher import LogSearcher
+from gui_manager import LogSearcherUI
 
 class SearchTab(ttk.Frame):
     """Frame for each search tab"""
@@ -609,66 +610,13 @@ class SearchTab(ttk.Frame):
             if self.search_frame.winfo_exists():
                 self.search_frame.destroy()
 
-class LogSearcherGUI:
+class LogSearcherGUI(LogSearcherUI):
     def __init__(self, root):
-        self.root = root
-        self.root.title("AWS Log Searcher")
-        self.root.state('zoomed')
-        self.root.geometry("1200x800")
-        
-        # Style definitions
-        style = ttk.Style()
-        
-        # Notebook (tab bar) style
-        style.configure("Custom.TNotebook", 
-            background='#1a1a1a',  # Dark background
-            borderwidth=0,         # No border
-            padding=0
-        )
-        
-        style.configure("Custom.TNotebook.Tab",
-            padding=[10, 5],      # Horizontal and vertical padding
-            background='#2d2d2d', # Normal tab color
-            foreground='#808080', # Normal tab text color
-            lightcolor='#2d2d2d',
-            borderwidth=0,        # No border
-        )
-        
-        style.map("Custom.TNotebook.Tab",
-            background=[("selected", '#363636')],  # Selected tab color
-            foreground=[("selected", '#ffffff')],  # Selected tab text color
-            expand=[("selected", [1, 1, 1, 0])]    # Slightly expand selected tab
-        )
-        
-        # Menu style
-        root.option_add('*Menu.background', '#2D2D2D')
-        root.option_add('*Menu.foreground', '#FFFFFF')
-        root.option_add('*Menu.activeBackground', '#404040')
-        root.option_add('*Menu.activeForeground', '#FFFFFF')
-        root.option_add('*Menu.selectColor', '#FFFFFF')
-        
-        # Create menu bar
-        self.menubar = tk.Menu(root)
-        root.config(menu=self.menubar)
-        
-        # File menu
-        file_menu = tk.Menu(self.menubar, tearoff=0)
-        self.menubar.add_cascade(label="File", menu=file_menu)
-        file_menu.add_command(label="New Tab", command=self.add_tab, 
-            accelerator="⌘T" if sys.platform == "darwin" else "Ctrl+T")
-        file_menu.add_command(label="Close Tab", command=self.close_current_tab, 
-            accelerator="⌘⌫" if sys.platform == "darwin" else "Ctrl+Backspace")
-        file_menu.add_separator()
-        file_menu.add_command(label="Exit", command=self.on_closing)
-        
-        # Settings menu
-        settings_menu = tk.Menu(self.menubar, tearoff=0)
-        self.menubar.add_cascade(label="Settings", menu=settings_menu)
-        settings_menu.add_command(label="Preferences", command=self.show_settings)
+        super().__init__(root)  # LogSearcherUI'nin init'ini çağır
+        self.last_tab_number = 0
         
         # Read paths from config
         self.load_config()
-        self.last_tab_number = 0
         
         # Main container
         main_container = ttk.Frame(root)
@@ -676,7 +624,7 @@ class LogSearcherGUI:
         
         # Notebook (tab container)
         self.notebook = ttk.Notebook(main_container, style="Custom.TNotebook")
-        self.notebook.pack(fill="both", expand=True, padx=0, pady=0)  # Remove padding
+        self.notebook.pack(fill="both", expand=True, padx=0, pady=0)
         
         # Track tab changes
         self.notebook.bind('<<NotebookTabChanged>>', self.on_tab_changed)
@@ -685,7 +633,6 @@ class LogSearcherGUI:
         self.add_tab()
         
         # To prevent GUI locking
-        self.root = root
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
         # Debounce timer for filtering
@@ -693,14 +640,6 @@ class LogSearcherGUI:
         
         # Add keyboard shortcuts
         self.bind_shortcuts()
-        
-        # Alternative shortcuts for closing tab
-        self.root.bind('<Command-BackSpace>', lambda e: self.close_current_tab())  # For macOS
-        self.root.bind('<Control-BackSpace>', lambda e: self.close_current_tab())  # For Windows/Linux
-        
-        # or
-        self.root.bind('<Command-d>', lambda e: self.close_current_tab())  # For macOS
-        self.root.bind('<Control-d>', lambda e: self.close_current_tab())  # For Windows/Linux
 
     def load_config(self):
         try:
