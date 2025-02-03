@@ -29,4 +29,14 @@ wheels/
 
 # OS
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+venv/
+__pycache__/
+*.pyc
+.env
+
+.venv/
+.venv/*
+venv/
+venv/* 

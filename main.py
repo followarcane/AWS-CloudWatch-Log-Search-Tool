@@ -11,6 +11,7 @@ from tkinter import filedialog
 import re
 import os
 import sys
+from log_searcher import LogSearcher
 
 class SearchTab(ttk.Frame):
     """Frame for each search tab"""
@@ -33,6 +34,9 @@ class SearchTab(ttk.Frame):
         
         # Variable for search dialog
         self.search_dialog = None
+        
+        # Log searcher'ı ekle
+        self.log_searcher = LogSearcher()
         
         # Create GUI
         self.setup_gui()
@@ -211,63 +215,22 @@ class SearchTab(ttk.Frame):
 
     def start_search(self):
         """Start search for this tab"""
-        if self.is_searching:
-            return
-            
-        self.stop_search()
-        self.clear_content()
-        
-        # Get search value
         search_value = self.search_var.get()
         if not search_value:
             self.status_var.set("Please enter a search value")
             return
-            
-        filter_pattern = f'"{search_value}"'  # Enclose in quotes
         
-        self.is_searching = True
-        self.search_completed = False
-        self.toggle_buttons(searching=True)
-        self.progress_bar.start()
-        
-        # Start a separate thread for each path
+        filter_pattern = f'"{search_value}"'
         paths_and_profiles = self.main_app.get_current_paths_and_profiles()
-        for path, profile in paths_and_profiles:
-            thread = threading.Thread(
-                target=self.main_app.search_logs,
-                args=(path, profile, filter_pattern, self),
-                daemon=True
-            )
-            thread.start()
-            self.active_threads.append(thread)
         
+        # LogSearcher'ı kullan
+        self.log_searcher.start_search(self, paths_and_profiles, filter_pattern)
         self.main_app.update_gui(self)
 
     def stop_search(self):
         """Stop search for this tab"""
-        self.is_searching = False
-        self.status_var.set("Stopping search...")
-        
-        # Stop active threads
-        for thread in self.active_threads:
-            if thread.is_alive():
-                thread.join(timeout=0.1)
-        self.active_threads.clear()
-        
-        # Process logs in queue
-        while not self.log_queue.empty():
-            try:
-                self.log_queue.get_nowait()
-            except queue.Empty:
-                break
-        
-        # Mark search as completed
-        self.search_completed = True
-        
-        # Update GUI
-        self.status_var.set("Search stopped!")
-        self.progress_bar.stop()
-        self.toggle_buttons(searching=False)
+        # LogSearcher'ı kullan
+        self.log_searcher.stop_search(self)
         
         # Sort logs and apply highlight
         if self.main_app.sort_by_time_enabled:
