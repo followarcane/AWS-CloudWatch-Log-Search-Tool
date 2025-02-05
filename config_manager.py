@@ -3,8 +3,6 @@ import sys
 from typing import Dict, List, Tuple, Optional
 
 class ConfigManager:
-    """Konfigürasyon yönetimi sınıfı"""
-    
     def __init__(self):
         self.env_configs = {}
         self.shortcuts = {}
@@ -14,7 +12,6 @@ class ConfigManager:
         self.load_config()
 
     def load_config(self):
-        """Konfigürasyon dosyasını yükle"""
         try:
             with open('config.json', 'r') as f:
                 config = json.load(f)
@@ -47,7 +44,6 @@ class ConfigManager:
                 })
                 
         except FileNotFoundError:
-            # Varsayılan config
             self.env_configs = {
                 "QA": {"paths": [], "profiles": {}},
                 "SB": {"paths": [], "profiles": {}},
@@ -56,7 +52,6 @@ class ConfigManager:
             self.save_config()
 
     def save_config(self):
-        """Konfigürasyonu dosyaya kaydet"""
         config = {
             'env_configs': self.env_configs,
             'highlight_settings': {
@@ -70,7 +65,6 @@ class ConfigManager:
             json.dump(config, f, indent=4)
 
     def get_current_paths_and_profiles(self, env: str) -> List[Tuple[str, str]]:
-        """Seçili environment için path ve profilleri getir"""
         try:
             print(f"\nSelected environment: {env}")
             config = self.env_configs.get(env, {"paths": [], "profiles": {}})
@@ -91,16 +85,13 @@ class ConfigManager:
             return []
 
     def get_platform_key(self) -> str:
-        """Platform tipini belirle (mac/win)"""
         return "mac" if sys.platform == "darwin" else "win"
 
     def get_shortcut(self, action: str) -> str:
-        """Belirli bir işlem için kısayolu getir"""
         platform_key = self.get_platform_key()
         return self.shortcuts.get(action, {}).get(platform_key, "")
 
     def update_shortcut(self, action: str, shortcut: str):
-        """Kısayol güncelle"""
         platform_key = self.get_platform_key()
         if action in self.shortcuts:
             self.shortcuts[action][platform_key] = shortcut 

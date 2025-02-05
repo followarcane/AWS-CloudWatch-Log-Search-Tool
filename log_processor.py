@@ -6,8 +6,6 @@ if TYPE_CHECKING:
     from search_tab import SearchTab
 
 class LogProcessor:
-    """Log işleme, filtreleme ve görüntüleme sınıfı"""
-    
     def __init__(self, search_highlight_enabled=True, filter_highlight_enabled=True):
         self.search_highlight_enabled = search_highlight_enabled
         self.filter_highlight_enabled = filter_highlight_enabled
