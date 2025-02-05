@@ -140,7 +140,7 @@ class SearchTab(ttk.Frame):
         def update_path_list(*args):
             paths = ["All"]
             env = self.env_var.get()
-            config = self.main_app.env_configs.get(env, {"paths": []})
+            config = self.main_app.config_manager.env_configs.get(env, {"paths": []})
             paths.extend(config["paths"])
             self.path_filter['values'] = paths
             if self.path_filter_var.get() not in paths:
@@ -211,7 +211,7 @@ class SearchTab(ttk.Frame):
             return
         
         filter_pattern = f'"{search_value}"'
-        paths_and_profiles = self.main_app.get_current_paths_and_profiles()
+        paths_and_profiles = self.main_app.config_manager.get_current_paths_and_profiles(self.env_var.get())
         
         # LogSearcher'ı kullan
         self.log_searcher.start_search(self, paths_and_profiles, filter_pattern)

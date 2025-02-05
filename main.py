@@ -15,15 +15,14 @@ from log_searcher import LogSearcher
 from gui_manager import LogSearcherUI
 from search_tab import SearchTab
 from log_processor import LogProcessor
+from config_manager import ConfigManager
 
 class LogSearcherGUI(LogSearcherUI):
     def __init__(self, root):
         super().__init__(root)  # LogSearcherUI'nin init'ini çağır
         self.last_tab_number = 0
         self.log_processor = LogProcessor()
-        
-        # Read paths from config
-        self.load_config()
+        self.config_manager = ConfigManager()
         
         # Main container
         main_container = ttk.Frame(root)
@@ -40,82 +39,11 @@ class LogSearcherGUI(LogSearcherUI):
         self.add_tab()
         
         # To prevent GUI locking
-        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
-        
-        # Debounce timer for filtering
         self.filter_timer = None
         
         # Add keyboard shortcuts
         self.bind_shortcuts()
 
-    def load_config(self):
-        try:
-            with open('config.json', 'r') as f:
-                config = json.load(f)
-                self.env_configs = config.get('env_configs', {})
-                
-                # Highlight and sorting settings
-                highlight_settings = config.get("highlight_settings", {})
-                self.search_highlight_enabled = highlight_settings.get("search_highlight", True)
-                self.filter_highlight_enabled = highlight_settings.get("filter_highlight", True)
-                self.sort_by_time_enabled = highlight_settings.get("sort_by_time", True)
-                
-                # Load shortcut settings
-                shortcut_settings = config.get("shortcuts", {
-                    "new_tab": {
-                        "win": "<Control-t>",
-                        "mac": "<Command-t>"
-                    },
-                    "close_tab": {
-                        "win": "<Control-BackSpace>",
-                        "mac": "<Command-BackSpace>"
-                    },
-                    "search_selected": {
-                        "win": "<Control-d>",
-                        "mac": "<Command-d>"
-                    },
-                    "stop_search": {  # Newly added shortcut
-                        "win": "<Control-Shift-C>",
-                        "mac": "<Command-Shift-C>"
-                    }
-                })
-                self.shortcuts = shortcut_settings
-                
-        except FileNotFoundError:
-            # Default config
-            self.env_configs = {
-                "QA": {"paths": [], "profiles": {}},
-                "SB": {"paths": [], "profiles": {}},
-                "PROD": {"paths": [], "profiles": {}}
-            }
-            # Default shortcuts
-            self.shortcuts = {
-                "new_tab": {
-                    "win": "<Control-t>",
-                    "mac": "<Command-t>"
-                },
-                "close_tab": {
-                    "win": "<Control-BackSpace>",
-                    "mac": "<Command-BackSpace>"
-                },
-                "search_selected": {
-                    "win": "<Control-d>",
-                    "mac": "<Command-d>"
-                },
-                "stop_search": {  # Newly added shortcut
-                    "win": "<Control-Shift-C>",
-                    "mac": "<Command-Shift-C>"
-                }
-            }
-            self.save_config()
-    
-    def save_config(self):
-        config = {
-            'env_configs': self.env_configs
-        }
-        with open('config.json', 'w') as f:
-            json.dump(config, f, indent=4)
-    
     def get_time_range(self):
         """Parse entered time and convert to appropriate format"""
         time_input = self.time_var.get().strip()
@@ -178,35 +106,12 @@ class LogSearcherGUI(LogSearcherUI):
             except queue.Empty:
                 break
         
-        if self.sort_by_time_enabled and current_tab.text_widget.get("1.0", tk.END).strip():
+        if self.config_manager.sort_by_time_enabled and current_tab.text_widget.get("1.0", tk.END).strip():
             self.log_processor.sort_logs_by_time(current_tab)
         
         current_tab.status_var.set("Search stopped!")
         current_tab.progress_bar.stop()
         current_tab.toggle_buttons(searching=False)  # Update tab's own button states
-
-    def get_current_paths_and_profiles(self):
-        """Return paths and profiles for selected environment"""
-        current_tab = self.get_current_tab()
-        if not current_tab:
-            return []
-        
-        env = current_tab.env_var.get()  # Use tab's own env_var
-        config = self.env_configs.get(env, {"paths": [], "profiles": {}})
-        
-        paths_with_profiles = []
-        for path in config["paths"]:
-            # Determine which profile the path belongs to
-            profile = config["profiles"]["steller"] if "steller" in path else config["profiles"]["bahama"]
-            paths_with_profiles.append((path, profile))
-        
-        print(f"\nSelected environment: {env}")
-        print(f"Found paths and profiles:")
-        for path, profile in paths_with_profiles:
-            print(f"  - Path: {path}")
-            print(f"    Profile: {profile}")
-        
-        return paths_with_profiles
 
     def search_logs(self, path, profile, filter_pattern, tab):
         try:
@@ -348,6 +253,7 @@ class LogSearcherGUI(LogSearcherUI):
         return True
 
     def update_gui(self, tab):
+        """Update GUI for given tab"""
         try:
             # Check if tab is valid
             if not tab in self.notebook.winfo_children():
@@ -359,63 +265,58 @@ class LogSearcherGUI(LogSearcherUI):
             has_new_logs = False
             batch_size = 0
             
-            try:
-                while batch_size < 5 and not tab.log_queue.empty():
-                    try:
-                        log_entry = tab.log_queue.get_nowait()
-                        print(f"[Tab {self.notebook.index(tab)}] Processing log: {log_entry['timestamp']} [{log_entry['level']}] Queue size: {tab.log_queue.qsize()}")
-                        
-                        tab.text_widget.configure(state='normal')
-                        
-                        # Add log entry
-                        if tab.text_widget.get("1.0", "end").strip():
-                            tab.text_widget.insert("end", "─" * 100 + "\n", "separator")
-                            tab.text_widget.tag_configure("separator", foreground="#6272a4")
-                        
-                        tab.text_widget.insert("end", f"{log_entry['timestamp']} ", "timestamp")
-                        
-                        level = log_entry['level']
-                        level_color = "#50fa7b"  # Default INFO color
-                        if level == "ERROR":
-                            level_color = "#ff5555"
-                        elif level == "WARN":
-                            level_color = "#ffb86c"
-                            
-                        tab.text_widget.insert("end", f"[{level}] ", f"level_{level_color}")
-                        tab.text_widget.insert("end", f"{log_entry['message']}\n\n", "message")
-                        
-                        # Reapply coloring
-                        tab.text_widget.tag_configure("timestamp", foreground="#8be9fd")
-                        tab.text_widget.tag_configure(f"level_{level_color}", foreground=level_color)
-                        tab.text_widget.tag_configure("message", foreground="white")
-                        
-                        # Scroll
-                        tab.text_widget.see("end")
-                        
-                        tab.text_widget.configure(state='disabled')
-                        
-                        # Update original log content
-                        tab.full_log_content = tab.text_widget.get(1.0, tk.END)
-                        
-                        has_new_logs = True
-                        batch_size += 1
-                        
-                    except queue.Empty:
-                        break
-                    except Exception as e:
-                        print(f"[{tab}] Error processing log: {e}")
-                        import traceback
-                        traceback.print_exc()
-                        continue
+            # Process logs in small batches to prevent GUI freezing
+            while batch_size < 5 and not tab.log_queue.empty():
+                try:
+                    log = tab.log_queue.get_nowait()
+                    print(f"[Tab {self.notebook.index(tab)}] Processing log: {log['timestamp']} [{log['level']}] Queue size: {tab.log_queue.qsize()}")
                     
-            except Exception as e:
-                print(f"[{tab}] Batch processing error: {e}")
-                import traceback
-                traceback.print_exc()
+                    tab.text_widget.configure(state='normal')
+                    
+                    # Add separator between logs
+                    if tab.text_widget.get("1.0", "end").strip():
+                        tab.text_widget.insert("end", "─" * 100 + "\n", "separator")
+                        tab.text_widget.tag_configure("separator", foreground="#6272a4")
+                    
+                    # Add log with colors
+                    tab.text_widget.insert("end", f"{log['timestamp']} ", "timestamp")
+                    
+                    level = log['level']
+                    level_color = "#50fa7b"  # Default INFO color
+                    if level == "ERROR":
+                        level_color = "#ff5555"
+                    elif level == "WARN":
+                        level_color = "#ffb86c"
+                    
+                    tab.text_widget.insert("end", f"[{level}] ", f"level_{level_color}")
+                    tab.text_widget.insert("end", f"{log['message']}\n\n", "message")
+                    
+                    # Configure tags
+                    tab.text_widget.tag_configure("timestamp", foreground="#8be9fd")
+                    tab.text_widget.tag_configure(f"level_{level_color}", foreground=level_color)
+                    tab.text_widget.tag_configure("message", foreground="white")
+                    
+                    # Auto-scroll to bottom
+                    tab.text_widget.see("end")
+                    
+                    tab.text_widget.configure(state='disabled')
+                    
+                    # Update full content
+                    tab.full_log_content = tab.text_widget.get(1.0, tk.END)
+                    
+                    has_new_logs = True
+                    batch_size += 1
+                    
+                except queue.Empty:
+                    break
+                except Exception as e:
+                    print(f"Log processing error: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    continue
             
-            # Check active threads
+            # Check if search is completed
             active_threads = [t for t in tab.active_threads if t.is_alive()]
-            
             if not active_threads and tab.log_queue.empty():
                 print(f"[Tab {self.notebook.index(tab)}] Search completed")
                 tab.is_searching = False
@@ -424,69 +325,29 @@ class LogSearcherGUI(LogSearcherUI):
                 tab.progress_bar.stop()
                 tab.toggle_buttons(searching=False)
                 
-                if self.sort_by_time_enabled:
+                if self.config_manager.sort_by_time_enabled:
                     self.log_processor.sort_logs_by_time(tab)
             else:
-                # Check if tab is valid
-                if tab in self.notebook.winfo_children():
-                    self.root.after(50, self.update_gui, tab)
-                
+                # Schedule next update if search is still ongoing
+                self.root.after(100, lambda: self.update_gui(tab))
+            
         except Exception as e:
             print(f"[{tab}] GUI update error: {e}")
             import traceback
             traceback.print_exc()
     
     def start_search(self):
-        current_tab = self.get_current_tab()
-        if not current_tab:
+        search_value = self.search_var.get()
+        if not search_value:
+            self.status_var.set("Please enter a search value")
             return
-            
-        # Stop searches in all tabs
-        for tab_id in self.notebook.tabs():
-            tab = self.notebook.nametowidget(tab_id)
-            tab.is_searching = False
-            
-            # Wait for tab's threads
-            for thread in tab.active_threads:
-                if thread.is_alive():
-                    thread.join(timeout=0.1)
-            tab.active_threads.clear()
-            
-            # Clear queue
-            while not tab.log_queue.empty():
-                try:
-                    tab.log_queue.get_nowait()
-                except queue.Empty:
-                    break
         
-            # Clear tab
-            self.clear_tab(tab)
-            
-            filter_pattern = self.get_filter_pattern()
-            if not filter_pattern:
-                current_tab.status_var.set("Please enter a search value")
-                return
-            
-            # Reset search states
-            current_tab.is_searching = True
-            current_tab.search_completed = False
-            
-            self.toggle_buttons(searching=True)
-            current_tab.progress_bar.start()
-            
-            # Start separate threads for each path
-            paths_and_profiles = self.get_current_paths_and_profiles()
-            for path, profile in paths_and_profiles:
-                thread = threading.Thread(
-                    target=self.search_logs,
-                    args=(path, profile, filter_pattern, current_tab),
-                    daemon=True
-                )
-                thread.start()
-                current_tab.active_threads.append(thread)
-            
-            # Start GUI updates
-            self.update_gui(current_tab)
+        filter_pattern = f'"{search_value}"'
+        paths_and_profiles = self.config_manager.get_current_paths_and_profiles(self.env_var.get())
+        
+        # LogSearcher'ı kullan
+        self.log_searcher.start_search(self, paths_and_profiles, filter_pattern)
+        self.update_gui(self)
 
     def export_results(self):
         """Export active tab's content"""
@@ -535,15 +396,15 @@ class LogSearcherGUI(LogSearcherUI):
         highlight_frame.pack(fill="x", padx=5, pady=5)
         
         # Search highlight checkbox
-        self.search_highlight_var = tk.BooleanVar(value=self.search_highlight_enabled)
+        self.search_highlight_var = tk.BooleanVar(value=self.config_manager.search_highlight_enabled)
         ttk.Checkbutton(highlight_frame, text="Search Highlight", variable=self.search_highlight_var).pack(padx=5, pady=2)
         
         # Filter highlight checkbox
-        self.filter_highlight_var = tk.BooleanVar(value=self.filter_highlight_enabled)
+        self.filter_highlight_var = tk.BooleanVar(value=self.config_manager.filter_highlight_enabled)
         ttk.Checkbutton(highlight_frame, text="Filter Highlight", variable=self.filter_highlight_var).pack(padx=5, pady=2)
         
         # Sort by time checkbox
-        self.sort_by_time_var = tk.BooleanVar(value=self.sort_by_time_enabled)
+        self.sort_by_time_var = tk.BooleanVar(value=self.config_manager.sort_by_time_enabled)
         ttk.Checkbutton(highlight_frame, text="Sort logs by time at search completion", 
                        variable=self.sort_by_time_var).pack(padx=5, pady=2)
         
@@ -787,16 +648,12 @@ class LogSearcherGUI(LogSearcherUI):
 
     def bind_shortcuts(self):
         """Bind shortcuts"""
-        # Determine system type
-        is_mac = sys.platform == "darwin"
-        platform_key = "mac" if is_mac else "win"
-        
         # New tab shortcut
-        new_tab_shortcut = self.shortcuts["new_tab"][platform_key]
+        new_tab_shortcut = self.config_manager.get_shortcut("new_tab")
         self.root.bind(new_tab_shortcut, lambda e: self.add_tab())
         
         # Tab close shortcut
-        close_tab_shortcut = self.shortcuts["close_tab"][platform_key]
+        close_tab_shortcut = self.config_manager.get_shortcut("close_tab")
         self.root.bind(close_tab_shortcut, lambda e: self.close_current_tab())
 
 if __name__ == "__main__":
