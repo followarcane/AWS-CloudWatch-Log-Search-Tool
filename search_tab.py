@@ -223,8 +223,8 @@ class SearchTab(ttk.Frame):
         self.log_searcher.stop_search(self)
         
         # Sort logs and apply highlight
-        if self.main_app.sort_by_time_enabled:
-            self.main_app.sort_logs_by_time()
+        if hasattr(self.main_app, 'log_processor'):
+            self.main_app.log_processor.sort_logs_by_time(self)
         
         # Highlight searched term
         search_term = self.search_var.get()
@@ -326,13 +326,13 @@ class SearchTab(ttk.Frame):
                 if not self.filter_var.get():
                     self.text_widget.delete(1.0, tk.END)
                     self.text_widget.insert(tk.END, self.full_log_content)
-                    self.main_app.reapply_colors(self)
+                    self.main_app.log_processor.reapply_colors(self)
                     search_term = self.search_var.get()
                     if search_term:
-                        self.main_app.highlight_text(self, "1.0", "end", search_term, "search_highlight")
+                        self.main_app.log_processor.highlight_text(self, "1.0", "end", search_term, "search_highlight")
                 else:
                     # Apply normal filtering
-                    self.main_app.filter_logs(self)
+                    self.main_app.log_processor.filter_logs(self)
                 
                 self.text_widget.configure(state='disabled')
                 return
@@ -364,16 +364,16 @@ class SearchTab(ttk.Frame):
             self.text_widget.insert(tk.END, '\n'.join(filtered_content))
             
             # Apply coloring
-            self.main_app.reapply_colors(self)
+            self.main_app.log_processor.reapply_colors(self)
             
             # Highlight search term
             search_term = self.search_var.get()
             if search_term:
-                self.main_app.highlight_text(self, "1.0", "end", search_term, "search_highlight")
+                self.main_app.log_processor.highlight_text(self, "1.0", "end", search_term, "search_highlight")
             
             # Apply normal filtering
             if self.filter_var.get():
-                self.main_app.filter_logs(self)
+                self.main_app.log_processor.filter_logs(self)
             
         except Exception as e:
             print(f"Path filtering error: {e}")
