@@ -3,6 +3,16 @@ import sys
 from typing import Dict, List, Tuple, Optional
 
 class ConfigManager:
+    """
+    Class responsible for managing application configuration.
+    
+    This class handles all application settings:
+    - Environment configurations (QA/SB/PROD)
+    - AWS profile and path settings
+    - User preferences
+    - Shortcut key definitions
+    - Saving/loading settings to/from file
+    """
     def __init__(self):
         self.env_configs = {}
         self.shortcuts = {}

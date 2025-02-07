@@ -5,7 +5,17 @@ from log_searcher import LogSearcher
 import queue
 
 class SearchTab(ttk.Frame):
-    """Frame for each search tab"""
+    """
+    Class representing each search tab.
+    
+    This class manages all functionality of a single search tab:
+    - Search interface
+    - Log display area
+    - Filtering capabilities
+    - Search status and progress
+    - Tab-specific settings
+    - Right-click menu and shortcuts
+    """
     def __init__(self, parent, main_app):
         super().__init__(parent)
         self.main_app = main_app

@@ -20,6 +20,20 @@ from log_manager import LogManager
 from settings_manager import SettingsManager
 
 class LogSearcherGUI(LogSearcherUI):
+    """
+    Main application class and coordinator of all components.
+    
+    This class brings together and manages all application components:
+    - GUI components (inherited from LogSearcherUI)
+    - Tab management
+    - Log operations
+    - Settings
+    - Search functionality
+    - Event handling
+    
+    Responsible for coordinating all manager classes 
+    (LogManager, SettingsManager, etc.)
+    """
     def __init__(self, root):
         super().__init__(root)  # LogSearcherUI'nin init'ini çağır
         self.last_tab_number = 0

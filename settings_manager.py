@@ -3,6 +3,17 @@ from tkinter import ttk, messagebox
 import sys
 
 class SettingsManager:
+    """
+    Class responsible for managing application settings and settings window.
+    
+    This class handles user settings management:
+    - Creating settings window
+    - Environment (QA/SB/PROD) configurations
+    - AWS profile and path settings
+    - Appearance and behavior settings
+    - Shortcut key configurations
+    - Persistent storage of settings
+    """
     def __init__(self, main_app):
         self.main_app = main_app
         self.config_manager = main_app.config_manager

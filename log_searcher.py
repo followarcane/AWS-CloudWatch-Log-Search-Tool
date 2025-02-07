@@ -9,6 +9,16 @@ if TYPE_CHECKING:
     from main import SearchTab  # For type hints only
 
 class LogSearcher:
+    """
+    Class responsible for AWS log searching operations.
+    
+    This class handles AWS CloudWatch log interactions:
+    - AWS credentials management
+    - Log group searching
+    - Log stream filtering
+    - Asynchronous log retrieval
+    - Error handling and retry logic
+    """
     
     def __init__(self):
         self.active_threads = []

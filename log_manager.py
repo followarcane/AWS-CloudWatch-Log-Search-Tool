@@ -8,6 +8,16 @@ if TYPE_CHECKING:
     from search_tab import SearchTab
 
 class LogManager:
+    """
+    Class responsible for managing log operations and GUI updates.
+    
+    This class handles log data processing and display:
+    - Displaying log data in GUI
+    - Coloring and formatting
+    - Auto-scrolling
+    - Batch processing for performance optimization
+    - Log state tracking
+    """
     def __init__(self, config_manager, log_processor):
         self.config_manager = config_manager
         self.log_processor = log_processor

@@ -6,6 +6,16 @@ if TYPE_CHECKING:
     from search_tab import SearchTab
 
 class LogProcessor:
+    """
+    Class responsible for processing log data.
+    
+    This class handles log data manipulation:
+    - Log filtering
+    - Time-based sorting
+    - Search term highlighting
+    - Log formatting
+    - Color and style applications
+    """
     def __init__(self, search_highlight_enabled=True, filter_highlight_enabled=True):
         self.search_highlight_enabled = search_highlight_enabled
         self.filter_highlight_enabled = filter_highlight_enabled

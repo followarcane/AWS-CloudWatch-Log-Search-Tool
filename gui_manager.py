@@ -4,7 +4,17 @@ import sys
 from typing import Optional
 
 class LogSearcherUI:
-    """GUI bileşenlerini yöneten sınıf"""
+    """
+    Base class that manages GUI components.
+    
+    This class creates and manages the basic GUI components:
+    - Main window settings
+    - Menu bar
+    - Theme and style settings
+    - Basic GUI events
+    
+    LogSearcherGUI class inherits from this and adds custom functionality.
+    """
     
     def __init__(self, root: tk.Tk):
         self.root = root
@@ -13,13 +23,13 @@ class LogSearcherUI:
         self.create_menu()
         
     def setup_window(self):
-        """Ana pencere ayarları"""
+        """Main window settings"""
         self.root.title("AWS Log Searcher")
         self.root.state('zoomed')
         self.root.geometry("1200x800")
         
     def setup_styles(self):
-        """TTK stilleri"""
+        """TTK styles"""
         style = ttk.Style()
         
         # Notebook (tab bar) style
@@ -65,7 +75,7 @@ class LogSearcherUI:
         )
     
     def create_menu(self):
-        """Menü oluşturma"""
+        """Create menu bar"""
         self.menubar = tk.Menu(self.root)
         self.root.config(menu=self.menubar)
         
@@ -91,21 +101,21 @@ class LogSearcherUI:
                                 command=self.on_preferences)
     
     def on_new_tab(self):
-        """Yeni tab oluşturma"""
+        """Create new tab"""
         if hasattr(self, 'add_tab'):
             self.add_tab()
         
     def on_close_tab(self):
-        """Tab kapatma"""
+        """Close current tab"""
         if hasattr(self, 'close_current_tab'):
             self.close_current_tab()
         
     def on_exit(self):
-        """Uygulamadan çıkış"""
+        """Exit application"""
         if hasattr(self, 'on_closing'):
             self.on_closing()
         
     def on_preferences(self):
-        """Ayarlar penceresi"""
+        """Show settings window"""
         if hasattr(self, 'show_settings'):
             self.show_settings() 
