@@ -387,167 +387,176 @@ class LogSearcherGUI(LogSearcherUI):
         self.clear_tab(current_tab)
 
     def show_settings(self):
-        settings_window = tk.Toplevel(self.root)
-        settings_window.title("Settings")
-        settings_window.geometry("1000x800")  # Larger window
-        
-        # Highlight settings frame
-        highlight_frame = ttk.LabelFrame(settings_window, text="Display Settings")
-        highlight_frame.pack(fill="x", padx=5, pady=5)
-        
-        # Search highlight checkbox
-        self.search_highlight_var = tk.BooleanVar(value=self.config_manager.search_highlight_enabled)
-        ttk.Checkbutton(highlight_frame, text="Search Highlight", variable=self.search_highlight_var).pack(padx=5, pady=2)
-        
-        # Filter highlight checkbox
-        self.filter_highlight_var = tk.BooleanVar(value=self.config_manager.filter_highlight_enabled)
-        ttk.Checkbutton(highlight_frame, text="Filter Highlight", variable=self.filter_highlight_var).pack(padx=5, pady=2)
-        
-        # Sort by time checkbox
-        self.sort_by_time_var = tk.BooleanVar(value=self.config_manager.sort_by_time_enabled)
-        ttk.Checkbutton(highlight_frame, text="Sort logs by time at search completion", 
-                       variable=self.sort_by_time_var).pack(padx=5, pady=2)
-        
-        # Create notebook (tab) widget
-        notebook = ttk.Notebook(settings_window)
-        notebook.pack(fill="both", expand=True, padx=5, pady=5)
-        
-        # Create separate tab for each environment
-        tabs = {}
-        for env in ["QA", "SB", "PROD"]:
-            tab = ttk.Frame(notebook)
-            notebook.add(tab, text=env)
-            tabs[env] = tab
+        """Ayarlar penceresini göster"""
+        try:
+            settings_window = tk.Toplevel(self.root)
+            settings_window.title("Settings")
+            settings_window.geometry("600x800")
+            settings_window.transient(self.root)
+            settings_window.grab_set()
             
-            # AWS Profiles frame
-            profile_frame = ttk.LabelFrame(tab, text="AWS Profiles")
-            profile_frame.pack(fill="x", padx=5, pady=5)
+            notebook = ttk.Notebook(settings_window)
+            notebook.pack(fill="both", expand=True, padx=10, pady=5)
             
-            # Steller Profile
-            steller_frame = ttk.Frame(profile_frame)
-            steller_frame.pack(fill="x", padx=5, pady=5)
-            ttk.Label(steller_frame, text="Steller Profile:").pack(side="left")
-            steller_profile = ttk.Entry(steller_frame)
-            steller_profile.pack(side="left", padx=5, fill="x", expand=True)
-            steller_profile.insert(0, self.env_configs[env]["profiles"]["steller"])
+            # Paths tab
+            paths_frame = ttk.Frame(notebook)
+            notebook.add(paths_frame, text="Paths")
             
-            # Bahama Profile
-            bahama_frame = ttk.Frame(profile_frame)
-            bahama_frame.pack(fill="x", padx=5, pady=5)
-            ttk.Label(bahama_frame, text="Bahama Profile:").pack(side="left")
-            bahama_profile = ttk.Entry(bahama_frame)
-            bahama_profile.pack(side="left", padx=5, fill="x", expand=True)
-            bahama_profile.insert(0, self.env_configs[env]["profiles"]["bahama"])
-            
-            # Path list frame
-            path_frame = ttk.LabelFrame(tab, text="Log Paths")
-            path_frame.pack(fill="both", expand=True, padx=5, pady=5)
-            
-            # Steller Paths
-            steller_paths_frame = ttk.LabelFrame(path_frame, text="Steller Paths (steller-developer profile)")
-            steller_paths_frame.pack(fill="both", expand=True, padx=5, pady=5)
-            steller_paths = tk.Text(steller_paths_frame, height=5)
-            steller_paths.pack(fill="both", expand=True, padx=5, pady=5)
-            # Steller path'lerini yükle
-            steller_paths.insert("1.0", "\n".join([p for p in self.env_configs[env]["paths"] if "steller" in p]))
-            
-            # Bahama Paths
-            bahama_paths_frame = ttk.LabelFrame(path_frame, text="Bahama Paths (bahama-developer profile)")
-            bahama_paths_frame.pack(fill="both", expand=True, padx=5, pady=5)
-            bahama_paths = tk.Text(bahama_paths_frame, height=5)
-            bahama_paths.pack(fill="both", expand=True, padx=5, pady=5)
-            # Bahama path'lerini yükle
-            bahama_paths.insert("1.0", "\n".join([p for p in self.env_configs[env]["paths"] if "bahama" in p]))
-            
-            # Store widgets for each tab
-            tabs[env] = {
-                "steller_profile": steller_profile,
-                "bahama_profile": bahama_profile,
-                "steller_paths": steller_paths,
-                "bahama_paths": bahama_paths
-            }
-        
-        # Shortcut settings frame
-        shortcut_frame = ttk.LabelFrame(settings_window, text="Shortcut Settings")
-        shortcut_frame.pack(fill="x", padx=5, pady=5)
-        
-        # Platform selection (macOS default)
-        platform_frame = ttk.Frame(shortcut_frame)
-        platform_frame.pack(fill="x", padx=5, pady=5)
-        
-        ttk.Label(platform_frame, text="Platform:").pack(side="left")
-        # Check system type and set default value
-        is_mac = sys.platform == "darwin"
-        platform_var = tk.StringVar(value="mac" if is_mac else "win")
-        
-        ttk.Radiobutton(platform_frame, text="Windows/Linux", 
-            variable=platform_var, value="win").pack(side="left", padx=5)
-        ttk.Radiobutton(platform_frame, text="macOS", 
-            variable=platform_var, value="mac").pack(side="left", padx=5)
-        
-        # Shortcut editing areas
-        shortcuts_frame = ttk.Frame(shortcut_frame)
-        shortcuts_frame.pack(fill="x", padx=5, pady=5)
-        
-        shortcut_entries = {}
-        row = 0
-        
-        for action, shortcuts in self.shortcuts.items():
-            ttk.Label(shortcuts_frame, text=f"{action}:").grid(row=row, column=0, padx=5, pady=2)
-            entry = ttk.Entry(shortcuts_frame)
-            entry.insert(0, shortcuts[platform_var.get()])
-            entry.grid(row=row, column=1, padx=5, pady=2, sticky="ew")
-            shortcut_entries[action] = entry
-            row += 1
-        
-        def update_shortcut_entries(*args):
-            """Update shortcuts when platform changes"""
-            platform = platform_var.get()
-            for action, entry in shortcut_entries.items():
-                entry.delete(0, tk.END)
-                entry.insert(0, self.shortcuts[action][platform])
-        
-        platform_var.trace_add("write", update_shortcut_entries)
-        
-        def save_settings():
-            try:
-                # Highlight and sorting settings
-                self.env_configs["highlight_settings"] = {
-                    "search_highlight": self.search_highlight_var.get(),
-                    "filter_highlight": self.filter_highlight_var.get(),
-                    "sort_by_time": self.sort_by_time_var.get()
+            # Create frames for each environment
+            tabs = {}
+            for env in ["QA", "SB", "PROD"]:
+                env_frame = ttk.LabelFrame(paths_frame, text=env)
+                env_frame.pack(fill="x", padx=5, pady=5)
+                
+                # Steller section
+                steller_frame = ttk.Frame(env_frame)
+                steller_frame.pack(fill="x", padx=5, pady=5)
+                
+                ttk.Label(steller_frame, text="Steller Profile:").pack(side="left", padx=5)
+                steller_profile = ttk.Entry(steller_frame)
+                steller_profile.pack(side="left", padx=5, fill="x", expand=True)
+                
+                ttk.Label(steller_frame, text="Steller Paths:").pack(fill="x", padx=5, pady=5)
+                steller_paths = tk.Text(env_frame, height=4)
+                steller_paths.pack(fill="x", padx=5, pady=5)
+                
+                # Bahama section
+                bahama_frame = ttk.Frame(env_frame)
+                bahama_frame.pack(fill="x", padx=5, pady=5)
+                
+                ttk.Label(bahama_frame, text="Bahama Profile:").pack(side="left", padx=5)
+                bahama_profile = ttk.Entry(bahama_frame)
+                bahama_profile.pack(side="left", padx=5, fill="x", expand=True)
+                
+                ttk.Label(bahama_frame, text="Bahama Paths:").pack(fill="x", padx=5, pady=5)
+                bahama_paths = tk.Text(env_frame, height=4)
+                bahama_paths.pack(fill="x", padx=5, pady=5)
+                
+                # Store widgets
+                tabs[env] = {
+                    "steller_profile": steller_profile,
+                    "bahama_profile": bahama_profile,
+                    "steller_paths": steller_paths,
+                    "bahama_paths": bahama_paths
                 }
                 
-                # Save settings for each environment
-                for env in ["QA", "SB", "PROD"]:
-                    # Profile'ları kaydet
-                    self.env_configs[env]["profiles"] = {
-                        "steller": tabs[env]["steller_profile"].get().strip(),
-                        "bahama": tabs[env]["bahama_profile"].get().strip()
-                    }
-                    
-                    # Path'leri kaydet
-                    steller_paths = [p.strip() for p in tabs[env]["steller_paths"].get("1.0", "end-1c").split("\n") if p.strip()]
-                    bahama_paths = [p.strip() for p in tabs[env]["bahama_paths"].get("1.0", "end-1c").split("\n") if p.strip()]
-                    
-                    self.env_configs[env]["paths"] = steller_paths + bahama_paths
+                # Load current values
+                config = self.config_manager.env_configs.get(env, {})
+                profiles = config.get("profiles", {})
+                paths = config.get("paths", [])
                 
-                # Shortcut settings
+                steller_profile.insert(0, profiles.get("steller", ""))
+                bahama_profile.insert(0, profiles.get("bahama", ""))
+                
+                # Split paths
+                steller_paths_list = [p for p in paths if "steller" in p]
+                bahama_paths_list = [p for p in paths if "bahama" in p]
+                
+                steller_paths.insert("1.0", "\n".join(steller_paths_list))
+                bahama_paths.insert("1.0", "\n".join(bahama_paths_list))
+            
+            # Highlight settings tab
+            highlight_frame = ttk.Frame(notebook)
+            notebook.add(highlight_frame, text="Highlight")
+            
+            # Search highlight checkbox
+            search_highlight_var = tk.BooleanVar(value=self.config_manager.search_highlight_enabled)
+            ttk.Checkbutton(highlight_frame, text="Enable Search Highlight", 
+                           variable=search_highlight_var).pack(padx=5, pady=5)
+            
+            # Filter highlight checkbox
+            filter_highlight_var = tk.BooleanVar(value=self.config_manager.filter_highlight_enabled)
+            ttk.Checkbutton(highlight_frame, text="Enable Filter Highlight", 
+                           variable=filter_highlight_var).pack(padx=5, pady=5)
+            
+            # Sort by time checkbox
+            sort_by_time_var = tk.BooleanVar(value=self.config_manager.sort_by_time_enabled)
+            ttk.Checkbutton(highlight_frame, text="Sort Logs by Time", 
+                           variable=sort_by_time_var).pack(padx=5, pady=5)
+            
+            # Shortcuts tab
+            shortcut_frame = ttk.Frame(notebook)
+            notebook.add(shortcut_frame, text="Shortcuts")
+            
+            # Platform selection
+            platform_frame = ttk.Frame(shortcut_frame)
+            platform_frame.pack(fill="x", padx=5, pady=5)
+            
+            ttk.Label(platform_frame, text="Platform:").pack(side="left", padx=5)
+            platform_var = tk.StringVar(value="mac" if sys.platform == "darwin" else "win")
+            ttk.Radiobutton(platform_frame, text="Windows/Linux", variable=platform_var, 
+                           value="win").pack(side="left", padx=5)
+            ttk.Radiobutton(platform_frame, text="macOS", variable=platform_var, 
+                           value="mac").pack(side="left", padx=5)
+            
+            # Shortcut editing areas
+            shortcuts_frame = ttk.Frame(shortcut_frame)
+            shortcuts_frame.pack(fill="x", padx=5, pady=5)
+            
+            shortcut_entries = {}
+            row = 0
+            
+            for action, shortcuts in self.config_manager.shortcuts.items():
+                ttk.Label(shortcuts_frame, text=f"{action}:").grid(row=row, column=0, padx=5, pady=2)
+                entry = ttk.Entry(shortcuts_frame)
+                entry.insert(0, shortcuts[platform_var.get()])
+                entry.grid(row=row, column=1, padx=5, pady=2, sticky="ew")
+                shortcut_entries[action] = entry
+                row += 1
+            
+            def update_shortcut_entries(*args):
+                """Update shortcuts when platform changes"""
                 platform = platform_var.get()
                 for action, entry in shortcut_entries.items():
-                    self.shortcuts[action][platform] = entry.get()
-                
-                # Rebind shortcuts
-                self.bind_shortcuts()
-                
-                self.save_config()
-                settings_window.destroy()
-                messagebox.showinfo("Success", "Settings saved!")
-                
-            except Exception as e:
-                messagebox.showerror("Error", f"Error saving settings: {str(e)}")
-        
-        ttk.Button(settings_window, text="Save", command=save_settings).pack(pady=10)
+                    entry.delete(0, tk.END)
+                    entry.insert(0, self.config_manager.shortcuts[action][platform])
+            
+            platform_var.trace_add("write", update_shortcut_entries)
+            
+            def save_settings():
+                try:
+                    # Save settings for each environment
+                    for env in ["QA", "SB", "PROD"]:
+                        # Save profiles
+                        self.config_manager.env_configs[env]["profiles"] = {
+                            "steller": tabs[env]["steller_profile"].get().strip(),
+                            "bahama": tabs[env]["bahama_profile"].get().strip()
+                        }
+                        
+                        # Save paths
+                        steller_paths = [p.strip() for p in tabs[env]["steller_paths"].get("1.0", "end-1c").split("\n") if p.strip()]
+                        bahama_paths = [p.strip() for p in tabs[env]["bahama_paths"].get("1.0", "end-1c").split("\n") if p.strip()]
+                        
+                        self.config_manager.env_configs[env]["paths"] = steller_paths + bahama_paths
+                    
+                    # Save highlight settings
+                    self.config_manager.search_highlight_enabled = search_highlight_var.get()
+                    self.config_manager.filter_highlight_enabled = filter_highlight_var.get()
+                    self.config_manager.sort_by_time_enabled = sort_by_time_var.get()
+                    
+                    # Save shortcut settings
+                    platform = platform_var.get()
+                    for action, entry in shortcut_entries.items():
+                        self.config_manager.update_shortcut(action, entry.get())
+                    
+                    # Save to file
+                    self.config_manager.save_config()
+                    
+                    # Rebind shortcuts
+                    self.bind_shortcuts()
+                    
+                    settings_window.destroy()
+                    messagebox.showinfo("Success", "Settings saved!")
+                    
+                except Exception as e:
+                    messagebox.showerror("Error", f"Error saving settings: {str(e)}")
+            
+            ttk.Button(settings_window, text="Save", command=save_settings).pack(pady=10)
+            
+        except Exception as e:
+            print(f"Error showing settings: {e}")
+            import traceback
+            traceback.print_exc()
 
     def add_tab(self):
         """Add a new search tab"""

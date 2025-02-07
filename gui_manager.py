@@ -107,4 +107,5 @@ class LogSearcherUI:
         
     def on_preferences(self):
         """Ayarlar penceresi"""
-        pass  # Main uygulamadan gelecek 
+        if hasattr(self, 'show_settings'):
+            self.show_settings() 

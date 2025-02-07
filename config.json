@@ -49,5 +49,28 @@
             "filter_highlight": true,
             "sort_by_time": true
         }
+    },
+    "highlight_settings": {
+        "search_highlight": true,
+        "filter_highlight": true,
+        "sort_by_time": true
+    },
+    "shortcuts": {
+        "new_tab": {
+            "win": "<Control-t>",
+            "mac": "<Command-t>"
+        },
+        "close_tab": {
+            "win": "<Control-BackSpace>",
+            "mac": "<Command-BackSpace>"
+        },
+        "search_selected": {
+            "win": "<Control-d>",
+            "mac": "<Command-d>"
+        },
+        "stop_search": {
+            "win": "<Control-Shift-C>",
+            "mac": "<Command-Shift-C>"
+        }
     }
 }
