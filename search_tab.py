@@ -9,6 +9,7 @@ class SearchTab(ttk.Frame):
     def __init__(self, parent, main_app):
         super().__init__(parent)
         self.main_app = main_app
+        self.log_manager = main_app.log_manager
         self.full_log_content = ""
         self.active_threads = []
         self.log_queue = queue.Queue()
@@ -215,7 +216,7 @@ class SearchTab(ttk.Frame):
         
         # LogSearcher'ı kullan
         self.log_searcher.start_search(self, paths_and_profiles, filter_pattern)
-        self.main_app.update_gui(self)
+        self.log_manager.update_gui(self)
 
     def stop_search(self):
         """Stop search for this tab"""
