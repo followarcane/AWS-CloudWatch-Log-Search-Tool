@@ -3,11 +3,7 @@
         "QA": {
             "paths": [
                 "/aws/eks/steller-test-cluster/applications/steller-test-wallet",
-                "/aws/eks/steller-test-cluster/applications/steller-test-internal",
-                "/aws/eks/steller-test-cluster/applications/steller-sandbox-gateway",
-                "/aws/eks/bahama-sandbox-cluster/applications/bahama-sandbox-apmv2",
-                "/aws/eks/bahama-sandbox-cluster/applications/bahama-sandbox-pool2",
-                "/aws/eks/bahama-sandbox-cluster/applications/bahama-sandbox-ppro"
+                "/aws/eks/steller-test-cluster/applications/steller-test-internal"
             ],
             "profiles": {
                 "steller": "steller-developer",
@@ -21,8 +17,9 @@
                 "/aws/eks/steller-test-cluster/applications/steller-sandbox-gateway",
                 "/aws/eks/bahama-sandbox-cluster/applications/bahama-sandbox-apmv2",
                 "/aws/eks/bahama-sandbox-cluster/applications/bahama-sandbox-pool2",
-                "/aws/eks/bahama-sandbox-cluster/applications/bahama-sandbox-ppro",
-                "/aws/eks/bahama-sandbox-cluster/applications/bahama-sandbox-messagingv2"
+                "/aws/eks/bahama-sandbox-cluster/applications/bahama-sandbox-ppag",
+                "/aws/eks/bahama-sandbox-cluster/applications/bahama-sandbox-messagingv2",
+                "/aws/eks/bahama-sandbox-cluster/applications/bahama-sandbox-ppro"
             ],
             "profiles": {
                 "steller": "steller-developer",
@@ -36,8 +33,9 @@
                 "/aws/eks/steller-prod-cluster/applications/steller-prod-gateway",
                 "/aws/eks/bahama-prod-cluster/applications/bahama-prod-apmv2",
                 "/aws/eks/bahama-prod-cluster/applications/bahama-prod-pool2",
-                "/aws/eks/bahama-prod-cluster/applications/bahama-prod-ppro",
-                "/aws/eks/bahama-prod-cluster/applications/bahama-prod-messagingv2"
+                "/aws/eks/bahama-prod-cluster/applications/bahama-prod-ppag",
+                "/aws/eks/bahama-prod-cluster/applications/bahama-prod-messagingv2",
+                "/aws/eks/bahama-prod-cluster/applications/bahama-prod-ppro"
             ],
             "profiles": {
                 "steller": "steller-developer",
