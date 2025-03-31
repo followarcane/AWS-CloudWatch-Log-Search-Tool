@@ -3,7 +3,12 @@
         "QA": {
             "paths": [
                 "/aws/eks/steller-test-cluster/applications/steller-test-wallet",
-                "/aws/eks/steller-test-cluster/applications/steller-test-internal"
+                "/aws/eks/steller-test-cluster/applications/steller-test-internal",
+                "/aws/eks/steller-test-cluster/applications/steller-sandbox-gateway",
+                "/aws/eks/bahama-sandbox-cluster/applications/bahama-sandbox-apmv2",
+                "/aws/eks/bahama-sandbox-cluster/applications/bahama-sandbox-pool2",
+                "/aws/eks/bahama-sandbox-cluster/applications/bahama-sandbox-ppag",
+                "/aws/eks/bahama-sandbox-cluster/applications/bahama-sandbox-ppro"
             ],
             "profiles": {
                 "steller": "steller-developer",
