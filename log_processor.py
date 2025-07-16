@@ -229,7 +229,7 @@ class LogProcessor:
         except Exception as e:
             print(f"Log sorting error: {e}")
         finally:
-            tab.text_widget.configure(state='disabled')
+            tab.text_widget.configure(state='normal')
 
     def highlight_text(self, tab: 'SearchTab', start: str, end: str, text: str, tag: str):
         """Highlight given text"""
