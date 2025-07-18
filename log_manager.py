@@ -1,8 +1,7 @@
-import tkinter as tk
-from tkinter import ttk
+import json
 import queue
-import datetime
-from typing import Optional, TYPE_CHECKING
+import tkinter as tk
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from search_tab import SearchTab
@@ -58,9 +57,29 @@ class LogManager:
                         level_color = "#ff5555"
                     elif level == "WARN":
                         level_color = "#ffb86c"
-                    
+
                     tab.text_widget.insert("end", f"[{level}] ", f"level_{level_color}")
-                    tab.text_widget.insert("end", f"{log['message']}\n\n", "message")
+
+                    # JSON pretty print (mesaj içinde JSON varsa)
+                    message = log['message']
+                    pretty_message = None
+                    json_start = message.find('{')
+                    json_end = message.rfind('}')
+                    if json_start != -1 and json_end != -1 and json_end > json_start:
+                        json_part = message[json_start:json_end + 1]
+                        try:
+                            parsed = json.loads(json_part)
+                            pretty_json = json.dumps(parsed, indent=2, ensure_ascii=False)
+                            # JSON öncesi ve sonrası metinleri koru
+                            before_json = message[:json_start]
+                            after_json = message[json_end + 1:]
+                            pretty_message = f"{before_json}{pretty_json}{after_json}"
+                        except Exception:
+                            pretty_message = None
+                    if pretty_message:
+                        tab.text_widget.insert("end", f"{pretty_message}\n\n", "message")
+                    else:
+                        tab.text_widget.insert("end", f"{message}\n\n", "message")
                     
                     # Configure tags
                     tab.text_widget.tag_configure("timestamp", foreground="#8be9fd")
@@ -69,8 +88,8 @@ class LogManager:
                     
                     # Auto-scroll to bottom
                     tab.text_widget.see("end")
-                    
-                    tab.text_widget.configure(state='disabled')
+
+                    tab.text_widget.configure(state='normal')
                     
                     # Update full content
                     tab.full_log_content = tab.text_widget.get(1.0, tk.END)
@@ -111,7 +130,7 @@ class LogManager:
         """Clear logs from text widget"""
         tab.text_widget.configure(state='normal')
         tab.text_widget.delete(1.0, tk.END)
-        tab.text_widget.configure(state='disabled')
+        tab.text_widget.configure(state='normal')
         tab.full_log_content = ""
         
         # Clear all tags

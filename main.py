@@ -1,23 +1,17 @@
-import tkinter as tk
-from tkinter import ttk, messagebox
-import subprocess
-import threading
-import queue
 import datetime
-from datetime import timedelta
-import json
-import csv
+import queue
+import subprocess
+import tkinter as tk
 from tkinter import filedialog
-import re
-import os
-import sys
-from log_searcher import LogSearcher
-from gui_manager import LogSearcherUI
-from search_tab import SearchTab
-from log_processor import LogProcessor
+from tkinter import ttk, messagebox
+
 from config_manager import ConfigManager
+from gui_manager import LogSearcherUI
 from log_manager import LogManager
+from log_processor import LogProcessor
+from search_tab import SearchTab
 from settings_manager import SettingsManager
+
 
 class LogSearcherGUI(LogSearcherUI):
     """
@@ -384,7 +378,7 @@ class LogSearcherGUI(LogSearcherUI):
         # Clear text widget
         tab.text_widget.configure(state='normal')
         tab.text_widget.delete(1.0, "end")
-        tab.text_widget.configure(state='disabled')
+        tab.text_widget.configure(state='normal')
         
         # Reset status and progress bar
         tab.status_var.set("")
