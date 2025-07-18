@@ -4,18 +4,6 @@ import sys
 from log_searcher import LogSearcher
 import queue
 
-# --- Helper: event to sequence string ---
-def event_to_sequence(event):
-    mods = []
-    if event.state & 0x4:
-        mods.append("Control")
-    if event.state & 0x10000:
-        mods.append("Command")
-    if event.state & 0x1:
-        mods.append("Shift")
-    return f"<{'-'.join(mods + [event.keysym.lower()])}>"
-# --- End helper ---
-
 class SearchTab(ttk.Frame):
     """
     Class representing each search tab.
@@ -57,67 +45,14 @@ class SearchTab(ttk.Frame):
         
         # Add right-click menu
         self.context_menu = tk.Menu(self, tearoff=0)
-        # --- Shortcut'ları dinamik gösterimle ekle ---
-        config_manager = self.main_app.config_manager
-        import platform
-        def pretty_shortcut(seq):
-            if not seq:
-                return ""
-            seq = seq.replace("<","").replace(">","")
-            keys = seq.split('-')
-            is_mac = platform.system() == "Darwin"
-            pretty = []
-            for k in keys:
-                k = k.lower()
-                if is_mac:
-                    if k == "command":
-                        pretty.append("⌘")
-                    elif k == "shift":
-                        pretty.append("⇧")
-                    elif k == "option" or k == "alt":
-                        pretty.append("⌥")
-                    elif k == "control" or k == "ctrl":
-                        pretty.append("⌃")
-                    else:
-                        pretty.append(k.upper())
-                else:
-                    if k == "command":
-                        pretty.append("Cmd")
-                    elif k == "shift":
-                        pretty.append("Shift")
-                    elif k == "option" or k == "alt":
-                        pretty.append("Alt")
-                    elif k == "control" or k == "ctrl":
-                        pretty.append("Ctrl")
-                    else:
-                        pretty.append(k.upper())
-            return ''.join(pretty) if is_mac else '+'.join(pretty)
-        # Search Selected Text in New Tab
-        search_selected_shortcut = config_manager.get_shortcut("search_selected")
-        search_selected_label = pretty_shortcut(search_selected_shortcut)
+        shortcut_text = "⌘D" if sys.platform == "darwin" else "Ctrl+D"
         self.context_menu.add_command(
-            label=f"Search Selected Text in New Tab ({search_selected_label})" if search_selected_label else "Search Selected Text in New Tab",
+            label=f"Search Selected Text in New Tab ({shortcut_text})", 
             command=self.search_selected_text
         )
-        # Copy full log block
-        copy_full_log_shortcut = config_manager.get_shortcut("copy_full_log")
-        shortcut_label = pretty_shortcut(copy_full_log_shortcut)
-        self.context_menu.add_command(
-            label=f"Copy full log block ({shortcut_label})" if shortcut_label else "Copy full log block",
-            command=lambda: self.copy_full_log(self._last_right_click_event)
-        )
-        # --- End ---
         
         # Bind right-click event to text widget
         self.text_widget.bind("<Button-3>", self.show_context_menu)
-
-        # --- Bind shortcut for copy full log block ---
-        # Shortcut ayarını config'den çek
-        config_manager = self.main_app.config_manager
-        copy_full_log_shortcut = config_manager.get_shortcut("copy_full_log")
-        if copy_full_log_shortcut:
-            self.text_widget.bind(copy_full_log_shortcut, self.copy_full_log_shortcut)
-        # --- End ---
         
         # Bind shortcut
         is_mac = sys.platform == "darwin"
@@ -249,56 +184,8 @@ class SearchTab(ttk.Frame):
         scrollbar.pack(side="right", fill="y")
         self.text_widget.configure(yscrollcommand=scrollbar.set)
         
-        # self.text_widget.configure(state='disabled') 
-        self.text_widget.configure(state='normal')      # Kopyalama için normal modda bırak
-
-        # --- Only allow copy and dynamic shortcuts, block all other edits ---
-        config_manager = self.main_app.config_manager
-        platform_key = config_manager.get_platform_key()
-        allowed_shortcuts = set()
-        for action, mapping in config_manager.shortcuts.items():
-            allowed_shortcuts.add(mapping.get(platform_key, ""))
-        # Her zaman kopyalama tuşunu da ekle
-        if platform_key == "mac":
-            allowed_shortcuts.add("<Command-c>")
-        else:
-            allowed_shortcuts.add("<Control-c>")
-
-        def block_unwanted_keys(event):
-            # Kopyalama (Ctrl+C, Cmd+C) serbest
-            if (event.state & 0x4 and event.keysym.lower() == 'c'):
-                return
-            if (event.state & 0x10000 and event.keysym.lower() == 'c'):
-                return
-            # Dinamik shortcutlar serbest
-            seq = event_to_sequence(event)
-            if seq in allowed_shortcuts:
-                return
-            # Yazma, kesme, yapıştırma ve diğer her şeyi engelle
-            return "break"
-
-        self.text_widget.bind('<Key>', block_unwanted_keys)
-        self.text_widget.bind('<<Paste>>', lambda e: "break")
-        self.text_widget.bind('<<Cut>>', lambda e: "break")
-        self.text_widget.bind('<Control-x>', lambda e: "break")
-        self.text_widget.bind('<Command-x>', lambda e: "break")
-        self.text_widget.bind('<Button-2>', lambda e: "break")  # Orta tık yapıştırmayı engelle
-
-        # --- Custom copy handler: Command+C ve Control+C her platformda çalışsın diye ---
-        def custom_copy(event):
-            try:
-                selection = self.text_widget.selection_get()
-                self.text_widget.clipboard_clear()
-                self.text_widget.clipboard_append(selection)
-            except tk.TclError:
-                pass  # Seçili metin yoksa hata verme
-            return "break"
-
-        if platform_key == "mac":
-            self.text_widget.bind('<Command-c>', custom_copy)
-        else:
-            self.text_widget.bind('<Control-c>', custom_copy)
-        # --- End of copy/shortcut-only protection ---
+        # Make text widget read-only
+        self.text_widget.configure(state='disabled')
         
         # Status bar and progress bar
         status_frame = ttk.Frame(self)
@@ -396,54 +283,11 @@ class SearchTab(ttk.Frame):
     def show_context_menu(self, event):
         """Show right-click menu"""
         try:
-            # Sağ tıklama event'ini sakla (log bloğu için lazım)
-            self._last_right_click_event = event
-            # Show menu if text is selected veya her zaman göster
-            self.context_menu.post(event.x_root, event.y_root)
+            # Show menu if text is selected
+            if self.text_widget.tag_ranges("sel"):
+                self.context_menu.post(event.x_root, event.y_root)
         except:
             pass
-
-    def copy_full_log(self, event):
-        """Copy the full log block at the right-clicked position or cursor position, wrapped in triple backticks"""
-        try:
-            # Sağ tıklama veya kısayol ile çağrılabilir
-            if hasattr(self, '_last_right_click_event') and event == self._last_right_click_event:
-                index = self.text_widget.index(f"@{event.x},{event.y}")
-            else:
-                # Kısayol ile çağrıldıysa, imlecin olduğu satırı kullan
-                index = self.text_widget.index(tk.INSERT)
-            line_no = int(index.split('.')[0])
-            total_lines = int(self.text_widget.index('end-1c').split('.')[0])
-            # Yukarı doğru log başını bul
-            start = line_no
-            while start > 1:
-                line = self.text_widget.get(f"{start}.0", f"{start}.end").strip()
-                if (not line) or (line.startswith('─') and line.endswith('─')):
-                    start += 1
-                    break
-                start -= 1
-            else:
-                start = 1
-            # Aşağı doğru log sonunu bul
-            end = line_no
-            while end < total_lines:
-                line = self.text_widget.get(f"{end}.0", f"{end}.end").strip()
-                if (not line) or (line.startswith('─') and line.endswith('─')):
-                    end -= 1
-                    break
-                end += 1
-            # Log bloğunu al
-            log_text = self.text_widget.get(f"{start}.0", f"{end}.end")
-            # Clipboard'a kopyala
-            self.text_widget.clipboard_clear()
-            self.text_widget.clipboard_append(log_text)
-        except Exception as e:
-            print(f"Log block could not be copied: {e}")
-        return "break"
-
-    def copy_full_log_shortcut(self, event):
-        """Kısayol ile log bloğu kopyalama"""
-        return self.copy_full_log(event)
 
     def search_selected_text(self, event=None):
         """Search selected text in new tab"""

@@ -34,7 +34,7 @@ class ConfigManager:
                 self.sort_by_time_enabled = highlight_settings.get("sort_by_time", True)
                 
                 # Kısayol ayarları
-                default_shortcuts = {
+                self.shortcuts = config.get("shortcuts", {
                     "new_tab": {
                         "win": "<Control-t>",
                         "mac": "<Command-t>"
@@ -48,19 +48,11 @@ class ConfigManager:
                         "mac": "<Command-d>"
                     },
                     "stop_search": {
-                        "win": "<Control-Shift-S>",
-                        "mac": "<Command-Shift-S>"
-                    },
-                    "copy_full_log": {
                         "win": "<Control-Shift-C>",
                         "mac": "<Command-Shift-C>"
                     }
-                }
-                self.shortcuts = config.get("shortcuts", default_shortcuts)
-                # Eksik shortcut varsa ekle
-                for key, val in default_shortcuts.items():
-                    if key not in self.shortcuts:
-                        self.shortcuts[key] = val
+                })
+                
         except FileNotFoundError:
             self.env_configs = {
                 "QA": {"paths": [], "profiles": {}},
