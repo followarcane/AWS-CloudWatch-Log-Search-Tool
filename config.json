@@ -60,18 +60,22 @@
     },
     "shortcuts": {
         "new_tab": {
-            "win": "<Control-t>",
-            "mac": "<Command-t>"
+            "win": "<Control-T>",
+            "mac": "<Command-T>"
         },
         "close_tab": {
             "win": "<Control-BackSpace>",
             "mac": "<Command-BackSpace>"
         },
         "search_selected": {
-            "win": "<Control-d>",
-            "mac": "<Command-d>"
+            "win": "<Control-D>",
+            "mac": "<Command-D>"
         },
         "stop_search": {
+            "win": "<Control-Shift-S>",
+            "mac": "<Command-Shift-S>"
+        },
+        "copy_full_log": {
             "win": "<Control-Shift-C>",
             "mac": "<Command-Shift-C>"
         }

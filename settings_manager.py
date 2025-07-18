@@ -194,9 +194,17 @@ class SettingsManager:
         
         self.shortcut_entries = {}
         row = 0
-        
+        # Label mapping for user-friendly shortcut names
+        shortcut_labels = {
+            "new_tab": "New Tab",
+            "close_tab": "Close Tab",
+            "search_selected": "Search Selected Text in New Tab",
+            "stop_search": "Stop Search",
+            "copy_full_log": "Copy full log block"
+        }
         for action, shortcuts in self.config_manager.shortcuts.items():
-            ttk.Label(shortcuts_frame, text=f"{action}:").grid(row=row, column=0, padx=5, pady=2)
+            label = shortcut_labels.get(action, action)
+            ttk.Label(shortcuts_frame, text=f"{label}:").grid(row=row, column=0, padx=5, pady=2)
             entry = ttk.Entry(shortcuts_frame)
             entry.insert(0, shortcuts[self.platform_var.get()])
             entry.grid(row=row, column=1, padx=5, pady=2, sticky="ew")
