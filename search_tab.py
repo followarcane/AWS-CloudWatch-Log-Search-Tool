@@ -119,6 +119,9 @@ class SearchTab(ttk.Frame):
             self.text_widget.bind(copy_full_log_shortcut, self.copy_full_log_shortcut)
         # --- End ---
         
+        # --- Shortcut'ları config.json'dan çekip text_widget'a bind et ---
+        # --- End ---
+
         # Bind shortcut
         is_mac = sys.platform == "darwin"
         if is_mac:

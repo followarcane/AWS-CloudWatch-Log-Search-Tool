@@ -49,12 +49,12 @@ class LogSearcherGUI(LogSearcherUI):
         
         # Add first tab
         self.add_tab()
+
+        # Shortcut'ları root'a bind et
+        self.bind_shortcuts()
         
         # To prevent GUI locking
         self.filter_timer = None
-        
-        # Add keyboard shortcuts
-        self.bind_shortcuts()
         
         # Set window close handler
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
@@ -347,7 +347,40 @@ class LogSearcherGUI(LogSearcherUI):
         self.notebook.add(new_tab, text=f"Search {self.last_tab_number}")
         self.notebook.select(new_tab)
         
+        # Yeni tab'ın text_widget'ına shortcut'ları bind et
+        self.bind_shortcuts_to_text_widget(new_tab)
+        
         return new_tab
+
+    def bind_shortcuts_to_text_widget(self, tab):
+        """Tüm shortcut'ları tab'ın text_widget'ına bind et, handler'lar sadece 'break' döndürsün"""
+        def handle_new_tab(e):
+            self.add_tab()
+            return "break"
+        def handle_close_tab(e):
+            self.close_current_tab()
+            return "break"
+        def handle_search_selected(e):
+            tab.search_selected_text()
+            return "break"
+        def handle_stop_search(e):
+            self.stop_search()
+            return "break"
+        def handle_copy_full_log(e):
+            tab.copy_full_log_shortcut(e)
+            return "break"
+
+        shortcut_action_map = {
+            "new_tab": handle_new_tab,
+            "close_tab": handle_close_tab,
+            "search_selected": handle_search_selected,
+            "stop_search": handle_stop_search,
+            "copy_full_log": handle_copy_full_log
+        }
+        for action, func in shortcut_action_map.items():
+            shortcut = self.config_manager.get_shortcut(action)
+            if shortcut:
+                tab.text_widget.bind(shortcut, func)
 
     def close_current_tab(self, event=None):
         """Close current tab"""
@@ -409,16 +442,20 @@ class LogSearcherGUI(LogSearcherUI):
         current_tab = self.get_current_tab()
         if current_tab and current_tab.is_searching:
             self.log_manager.update_gui(current_tab)
-
+            
     def bind_shortcuts(self):
-        """Bind shortcuts"""
-        # New tab shortcut
-        new_tab_shortcut = self.config_manager.get_shortcut("new_tab")
-        self.root.bind(new_tab_shortcut, lambda e: self.add_tab())
-        
-        # Tab close shortcut
-        close_tab_shortcut = self.config_manager.get_shortcut("close_tab")
-        self.root.bind(close_tab_shortcut, lambda e: self.close_current_tab())
+        """Bind all shortcuts to root so they work everywhere"""
+        shortcut_action_map = {
+            "new_tab": lambda e: self.add_tab(),
+            "close_tab": lambda e: self.close_current_tab(),
+            "search_selected": lambda e: self.get_current_tab() and self.get_current_tab().search_selected_text(),
+            "stop_search": lambda e: self.stop_search(),
+            "copy_full_log": lambda e: self.get_current_tab() and self.get_current_tab().copy_full_log_shortcut(e)
+        }
+        for action, func in shortcut_action_map.items():
+            shortcut = self.config_manager.get_shortcut(action)
+            if shortcut:
+                self.root.bind(shortcut, func)
 
 if __name__ == "__main__":
     try:
