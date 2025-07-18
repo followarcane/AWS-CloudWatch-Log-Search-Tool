@@ -72,6 +72,10 @@
             "mac": "<Command-d>"
         },
         "stop_search": {
+            "win": "<Control-Shift-S>",
+            "mac": "<Command-Shift-S>"
+        },
+        "copy_full_log": {
             "win": "<Control-Shift-C>",
             "mac": "<Command-Shift-C>"
         }
