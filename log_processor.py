@@ -1,5 +1,5 @@
-import tkinter as tk
 import datetime
+import tkinter as tk
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -31,7 +31,7 @@ class LogProcessor:
             
             # If content is empty
             if not tab.full_log_content.strip():
-                tab.text_widget.configure(state='disabled')
+                tab.text_widget.configure(state='normal')
                 return
             
             # If filter is empty, show all logs
@@ -41,7 +41,7 @@ class LogProcessor:
                 search_term = tab.search_var.get()
                 if search_term:
                     self.highlight_text(tab, "1.0", "end", search_term, "search_highlight")
-                tab.text_widget.configure(state='disabled')
+                tab.text_widget.configure(state='normal')
                 return
             
             # If filter text is invalid, show original logs
@@ -51,7 +51,7 @@ class LogProcessor:
                 search_term = tab.search_var.get()
                 if search_term:
                     self.highlight_text(tab, "1.0", "end", search_term, "search_highlight")
-                tab.text_widget.configure(state='disabled')
+                tab.text_widget.configure(state='normal')
                 return
             
             # Split logs into lines and group them
@@ -118,12 +118,12 @@ class LogProcessor:
             search_term = tab.search_var.get()
             if search_term:
                 self.highlight_text(tab, "1.0", "end", search_term, "search_highlight")
-            
-            tab.text_widget.configure(state='disabled')
+
+            tab.text_widget.configure(state='normal')
                         
         except Exception as e:
             print(f"Filtering error: {e}")
-            tab.text_widget.configure(state='disabled')
+            tab.text_widget.configure(state='normal')
 
     def sort_logs_by_time(self, tab: 'SearchTab'):
         """Sort logs by timestamp"""
@@ -304,4 +304,4 @@ class LogProcessor:
                 
         except Exception as e:
             print(f"Coloring error: {e}")
-            tab.text_widget.configure(state='disabled') 
+            tab.text_widget.configure(state='normal')
