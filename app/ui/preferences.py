@@ -200,6 +200,18 @@ class PreferencesDialog(QDialog):
             margin-top: 14px;
             padding: 14px 12px 12px 12px;
         }
+        QSpinBox#collapseSpin {
+            min-height: 36px;
+            min-width: 160px;
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+        QSpinBox#collapseSpin::up-button,
+        QSpinBox#collapseSpin::down-button {
+            width: 22px;
+            background: #3a3d44;
+            border: none;
+        }
         QCheckBox {
             spacing: 8px;
             padding: 4px 0;
@@ -269,19 +281,20 @@ class PreferencesDialog(QDialog):
         display_l.addWidget(self.sort_time)
         display_l.addWidget(self.beautify)
 
-        collapse_row = QHBoxLayout()
         collapse_label = QLabel("Collapse logs longer than")
         collapse_label.setObjectName("fieldLabel")
+        collapse_label.setWordWrap(True)
+        display_l.addWidget(collapse_label)
         self.collapse_spin = QSpinBox()
+        self.collapse_spin.setObjectName("collapseSpin")
         self.collapse_spin.setRange(3, 200)
         self.collapse_spin.setValue(self.config.max_collapsed_lines)
         self.collapse_spin.setSuffix(" lines")
-        self.collapse_spin.setMinimumWidth(120)
-        self.collapse_spin.setMaximumWidth(180)
-        collapse_row.addWidget(collapse_label)
-        collapse_row.addWidget(self.collapse_spin)
-        collapse_row.addStretch(1)
-        display_l.addLayout(collapse_row)
+        self.collapse_spin.setMinimumHeight(36)
+        self.collapse_spin.setMinimumWidth(160)
+        self.collapse_spin.setMaximumWidth(220)
+        self.collapse_spin.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        display_l.addWidget(self.collapse_spin)
         layout.addWidget(display)
 
         system = QGroupBox("System")

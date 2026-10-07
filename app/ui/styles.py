@@ -14,8 +14,12 @@ QLineEdit, QComboBox, QSpinBox, QPlainTextEdit, QTextEdit, QListView, QTreeWidge
     border-radius: 6px;
     padding: 6px 8px;
     selection-background-color: #3d5a80;
+    min-height: 28px;
 }
-QLineEdit:focus, QComboBox:focus, QPlainTextEdit:focus {
+QSpinBox {
+    padding-right: 4px;
+}
+QLineEdit:focus, QComboBox:focus, QPlainTextEdit:focus, QSpinBox:focus {
     border: 1px solid #5b8def;
 }
 QPushButton {
