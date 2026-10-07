@@ -1,0 +1,12 @@
+{
+    "highlight_settings": {
+        "search_highlight": true,
+        "filter_highlight": true,
+        "sort_by_time": true
+    },
+    "app_settings": {
+        "keep_awake": false,
+        "max_collapsed_lines": 15,
+        "beautify_logs": true
+    }
+}

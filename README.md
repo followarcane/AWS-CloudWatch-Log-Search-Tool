@@ -1,89 +1,122 @@
 # AWS Log Searcher
 
-A GUI tool for searching and filtering AWS CloudWatch logs with ease.
+Company desktop tool for searching AWS CloudWatch logs across multiple log groups (QA / SB / PROD).
 
-## Installation
+**Stack:** Python 3 + PyQt6 + `awslogs` CLI (local AWS profiles).
 
-1. Clone the project:
-```bash
-cd Awslogs w/ GUI
-```
+## Requirements
 
-2. Create and activate virtual environment:
-```bash
-# macOS/Linux
-python3 -m venv venv
-source venv/bin/activate
+- Python 3.10+
+- AWS CLI profiles configured (`aws configure` or `aws sso login`)
+- `awslogs` on PATH (`pip install awslogs`)
 
-# Windows
-python3 -m venv venv
-.\venv\Scripts\activate
-```
-
-3. Install required packages:
-```bash
-pip3 install -r requirements.txt
-brew install python-tk
-```
-
-4. Run the application:
-```bash
-python3 main.py
-```
-
-## Quick Access for iTerm2
-
-Add the following alias to your `.zshrc` or `.bashrc` file for quick access in iTerm2:
+## Quick start
 
 ```bash
-alias logsearch="cd /path/to/aws-log-searcher && source venv/bin/activate && python3 main.py"
+cd awslogs-w-gui
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python main.py
 ```
 
-Now you can start the application by simply typing `logsearch` in your terminal.
+Optional iTerm alias:
 
-## Features
+```bash
+alias logsearch="cd /path/to/awslogs-w-gui && source .venv/bin/activate && python main.py"
+```
 
-### Multi-tab Support
-- Open multiple search tabs simultaneously
-- Each tab maintains its own search context and history
-- Keyboard shortcuts:
-  - New Tab: `⌘T` (macOS) / `Ctrl+T` (Windows/Linux)
-  - Close Tab: `⌘⌫` (macOS) / `Ctrl+Backspace` (Windows/Linux)
+## Configuration
 
-### Search Capabilities
-- Real-time AWS CloudWatch log searching
-- Quick search within logs: `⌘F` (macOS) / `Ctrl+F` (Windows/Linux)
-- Search selected text in new tab: `⌘D` (macOS) / `Ctrl+D` (Windows/Linux)
-- Start search: `Enter`
-- Stop search: `⌘⇧C` (macOS) / `Ctrl+Shift+C` (Windows/Linux)
-- Right-click context menu for quick search options
+| File | In git? | Purpose |
+|------|---------|---------|
+| `config.company.json.example` | yes | Template — copy to `config.company.json` |
+| `config.company.json` | **no** (gitignored) | Your env → log group paths + AWS profiles |
+| `config.local.json.example` | yes | Template for personal prefs |
+| `config.local.json` | **no** (gitignored) | Preferences / personal overrides |
 
-### Filtering & Organization
-- Real-time log filtering with debounced input
-- Path-based filtering with dropdown selection
-- Environment selection (QA/SB/PROD)
-- Time-based search range configuration
-- Automatic time-based log sorting
+### First-time setup (other people)
 
-### Visual Features
-- Color-coded log levels:
-  - INFO: Green
-  - WARN: Orange
-  - ERROR: Red
-- Timestamp highlighting in cyan
-- Search term highlighting in red
-- Dark theme optimized for long sessions
+1. `cp config.company.json.example config.company.json`
+2. Edit `config.company.json`: put your CloudWatch log group paths and AWS profile names
+3. Or skip the file and fill **Settings → Preferences → Paths & Profiles** in the UI (saved to `config.local.json`)
+4. `aws sso login` / `aws configure` for those profiles
+5. `python main.py`
 
-### User Interface
-- Clean and intuitive interface
-- Progress indicators for active searches
-- Status updates for search operations
-- Resizable window with proper layout management
-- Customizable through preferences menu
+**Profile resolution:** for each path, the app picks the longest `profiles` key that is a substring of the path.
 
-### Additional Features
-- Stop/Resume search operations
-- Clear log content
-- Copy log content
-- Configurable through `config.json`
-- Persistent settings between sessions
+See [app/config/schema.md](app/config/schema.md).
+
+### Preferences UI (keep it simple)
+
+| Section | What it does |
+|---------|----------------|
+| **General** | Highlight, sort-on-finish, beautify JSON, collapse long logs, keep-awake (off by default) |
+| **Paths & Profiles** | Per-env log groups + `pathSubstring=awsProfile` lines |
+| **Shortcuts** | Click a field, press keys (e.g. ⌘T) — auto-captured |
+
+## Features (v2)
+
+- Multi-tab searches with virtualized result list (handles large result sets)
+- Parallel `awslogs get` across selected log groups
+- Path multi-select, client-side filter, detail pane with JSON pretty-print
+- Clear auth / rate-limit / missing-group errors
+- Preferences saved to `config.local.json`
+- Optional macOS keep-awake (**off by default**)
+
+### Shortcuts (defaults)
+
+| Action | macOS | Windows/Linux |
+|--------|-------|---------------|
+| New tab | ⌘T | Ctrl+T |
+| Close tab | ⌘W | Ctrl+W |
+| Search selection in new tab | ⌘D | Ctrl+D |
+| Stop search | ⌘⇧S | Ctrl+Shift+S |
+| Copy full log | ⌘⇧C | Ctrl+Shift+C |
+| Copy awslogs command | ⌘⇧A | Ctrl+Shift+A |
+
+Customize under **Settings → Preferences**.
+
+## macOS app build
+
+```bash
+chmod +x packaging/build_macos.sh
+./packaging/build_macos.sh
+```
+
+Output: `packaging/dist/AWS Log Searcher.app`
+
+End users still need AWS credentials / SSO and `awslogs` available in their environment.
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| `awslogs` not found | `pip install awslogs` (same venv or global) |
+| ExpiredToken / credentials | `aws sso login --profile <name>` |
+| AccessDenied | Check IAM permissions for CloudWatch Logs on that profile |
+| Log group not found | Verify path in `config.company.json` / Preferences |
+| Empty results | Widen start time; confirm filter text matches CloudWatch filter pattern rules |
+
+Debug logging:
+
+```bash
+LOG_LEVEL=DEBUG python main.py
+```
+
+## Smoke checklist
+
+- [ ] Search across multiple groups returns rows
+- [ ] Stop cancels in-flight work
+- [ ] Client filter narrows the list without re-querying AWS
+- [ ] Export writes a text file
+- [ ] Preferences save and reload via `config.local.json`
+- [ ] Wrong profile shows a readable credentials error
+
+## Legacy
+
+Previous Tkinter implementation lives under [`legacy/`](legacy/) for reference only. Do not use it for new work.
+
+## Roadmap
+
+See [docs/ROADMAP.md](docs/ROADMAP.md) for multi-team / platform plans.

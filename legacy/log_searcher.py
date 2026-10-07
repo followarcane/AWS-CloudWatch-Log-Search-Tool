@@ -28,6 +28,35 @@ class LogSearcher:
     
     def search_logs(self, path: str, profile: str, filter_pattern: str, tab: 'SearchTab') -> None:
         try:
+            # Determine --start value from tab's time input
+            time_input = tab.time_var.get().strip()
+            start_value = "1h ago"
+            
+            if time_input:
+                if time_input.isdigit():
+                    start_value = f"{time_input}h ago"
+                else:
+                    # Try DD.MM.YY format (convert to DD-MM-YYYY 00:00:00)
+                    try:
+                        dt = datetime.datetime.strptime(time_input, "%d.%m.%y")
+                        dt = dt.replace(hour=0, minute=0, second=0)
+                        dt = dt - datetime.timedelta(minutes=1)
+                        start_value = dt.strftime("%Y-%m-%d %H:%M:%S")
+                    except ValueError:
+                        # Try DD-MM-YYYY HH:MM:SS format (from logs)
+                        try:
+                            dt = datetime.datetime.strptime(time_input, "%d-%m-%Y %H:%M:%S")
+                            dt = dt - datetime.timedelta(minutes=1)
+                            start_value = dt.strftime("%Y-%m-%d %H:%M:%S")
+                        except ValueError:
+                            # Try YYYY-MM-DD HH:MM:SS format
+                            try:
+                                dt = datetime.datetime.strptime(time_input, "%Y-%m-%d %H:%M:%S")
+                                dt = dt - datetime.timedelta(minutes=1)
+                                start_value = dt.strftime("%Y-%m-%d %H:%M:%S")
+                            except ValueError:
+                                start_value = "1h ago"
+            
             cmd = [
                 "awslogs",
                 "get",
@@ -35,7 +64,7 @@ class LogSearcher:
                 "--profile",
                 profile,
                 "--start",
-                f"{tab.time_var.get().strip()}h ago",
+                start_value,
                 "--query=log"
             ]
             

@@ -39,4 +39,16 @@ __pycache__/
 .venv/
 .venv/*
 venv/
-venv/* 
+venv/*
+
+# Personal / company secrets — never commit real log paths or AWS profile maps
+config.local.json
+config.company.json
+# Legacy filename (app prefers config.company.json); keep secrets out of git
+config.json
+.caffeinate.pid
+
+# Packaging
+*.spec
+packaging/build/
+packaging/dist/

@@ -1,0 +1,31 @@
+{
+    "env_configs": {
+        "QA": {
+            "paths": [
+                "/aws/eks/my-qa-cluster/applications/my-service-a",
+                "/aws/eks/my-qa-cluster/applications/my-service-b"
+            ],
+            "profiles": {
+                "my-qa-cluster": "my-aws-profile-qa"
+            }
+        },
+        "PROD": {
+            "paths": [
+                "/aws/eks/my-prod-cluster/applications/my-service-a"
+            ],
+            "profiles": {
+                "my-prod-cluster": "my-aws-profile-prod"
+            }
+        }
+    },
+    "highlight_settings": {
+        "search_highlight": true,
+        "filter_highlight": true,
+        "sort_by_time": true
+    },
+    "app_settings": {
+        "keep_awake": false,
+        "max_collapsed_lines": 15,
+        "beautify_logs": true
+    }
+}
